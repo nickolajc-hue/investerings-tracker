@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Invest-Master Pro v12.0</title>
+    <title>Invest-Master Pro v13.0</title>
     <style>
         :root { --primary: #2563eb; --success: #16a34a; --danger: #dc2626; --bg: #f0f2f5; --card-bg: #ffffff; --text: #1e293b; --unread: #3b82f6; }
         body { font-family: 'Segoe UI', sans-serif; background: var(--bg); padding: 20px; color: var(--text); }
@@ -19,20 +19,13 @@
         table { width: 100%; border-collapse: collapse; }
         th, td { padding: 12px; border-bottom: 1px solid #eee; text-align: right; font-size: 14px; }
         th:first-child, td:first-child { text-align: left; }
-        .edit-mode { background: #fef3c7 !important; border: 2px solid #f59e0b !important; }
-        .tag { background: #e2e8f0; padding: 2px 6px; border-radius: 4px; font-size: 11px; margin-right: 4px; display: inline-block; margin-bottom: 2px; }
-        
-        /* POPUP / TOAST STYLES */
+        .tag { background: #e2e8f0; padding: 2px 6px; border-radius: 4px; font-size: 11px; margin-right: 4px; display: inline-block; }
         #toast-container { position: fixed; top: 20px; right: 20px; z-index: 1000; }
-        .toast { background: #333; color: white; padding: 12px 24px; border-radius: 8px; margin-bottom: 10px; 
-                 box-shadow: 0 4px 12px rgba(0,0,0,0.2); animation: slideIn 0.3s ease-out; display: flex; align-items: center; gap: 10px; }
-        .toast.success { border-left: 5px solid var(--success); }
-        .toast.info { border-left: 5px solid var(--primary); }
-        .toast.danger { border-left: 5px solid var(--danger); }
+        .toast { background: #333; color: white; padding: 12px 24px; border-radius: 8px; margin-bottom: 10px; box-shadow: 0 4px 12px rgba(0,0,0,0.2); animation: slideIn 0.3s ease-out; border-left: 5px solid transparent; }
+        .toast.success { border-left-color: var(--success); }
+        .toast.danger { border-left-color: var(--danger); }
+        .toast.info { border-left-color: var(--primary); }
         @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
-
-        .unread-dot { color: var(--unread); font-size: 20px; margin-right: 8px; vertical-align: middle; }
-        .news-item { border-bottom: 1px solid #eee; padding: 15px 0; }
     </style>
 </head>
 <body>
@@ -40,7 +33,7 @@
 <div id="toast-container"></div>
 
 <div class="container">
-    <h1>📊 Invest-Master Pro v12.0</h1>
+    <h1>📊 Invest-Master Pro v13.0</h1>
 
     <div class="tabs">
         <button class="tab-btn active" onclick="showTab('dashboard', this)">🏠 Dashboard</button>
@@ -58,11 +51,9 @@
                 <input id="currentPrice" type="number" placeholder="Nuv. pris">
                 <select id="currency"><option value="USD">USD</option><option value="DKK">DKK</option><option value="EUR">EUR</option><option value="GBP">GBP</option></select>
             </div>
-            
             <div id="modelSelectionArea" style="margin-top:15px; display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; background: #f8fafc; padding: 10px; border-radius: 8px;"></div>
-
             <div style="margin-top: 15px; display: flex; gap: 10px;">
-                <button id="addBtn" onclick="saveInvestment()" style="flex: 2;">Gem investering</button>
+                <button onclick="saveInvestment()" style="flex: 2;">Gem investering</button>
                 <button id="cancelBtn" onclick="resetForm()" style="flex: 1; background: #64748b; display: none;">Annuller</button>
             </div>
         </div>
@@ -80,50 +71,76 @@
     </div>
 
     <div id="allocation" class="tab-content">
-        <div class="card">
-            <h2>📋 Administrer Allokerings-modeller</h2>
-            <button onclick="createNewModel()" style="background:var(--success); margin-bottom: 20px;">+ Opret ny model</button>
-            <div id="modelsContainer"></div>
-        </div>
+        <div class="card"><h2>📁 Allokeringer</h2><div id="modelsContainer"></div><button onclick="createNewModel()" style="background:var(--success)">+ Ny model</button></div>
     </div>
-
-    <div id="news" class="tab-content">
-        <div class="card">
-            <h2>📰 Seneste nyt</h2>
-            <div id="newsList">Tilføj aktier for at se nyheder...</div>
-        </div>
-    </div>
+    <div id="news" class="tab-content"><div class="card"><h2>📰 Nyheder</h2><div id="newsList"></div></div></div>
 </div>
 
 <script>
-    let investments = JSON.parse(localStorage.getItem("investments_v12")) || [];
-    let models = JSON.parse(localStorage.getItem("models_v12")) || [
-        { name: "Strategi", hierarchy: [{ name: "Aktier", sub: [{ name: "Vækst", pct: 100 }] }] }
-    ];
-    let readNews = JSON.parse(localStorage.getItem("readNews_v12")) || [];
+    let investments = JSON.parse(localStorage.getItem("investments_v13")) || [];
+    let models = JSON.parse(localStorage.getItem("models_v13")) || [{ name: "Strategi", hierarchy: [] }];
     let fxRates = { USD: 6.85, EUR: 7.45, DKK: 1, GBP: 8.70 };
     let editingIndex = -1;
     const fmt = new Intl.NumberFormat('da-DK', { style: 'currency', currency: 'DKK' });
 
-    // --- TOAST NOTIFIKATION SYSTEM ---
-    function showToast(message, type = 'success') {
-        const container = document.getElementById('toast-container');
-        const toast = document.createElement('div');
-        toast.className = `toast ${type}`;
-        toast.innerHTML = `<span>${message}</span>`;
-        container.appendChild(toast);
-        setTimeout(() => {
-            toast.style.opacity = '0';
-            setTimeout(() => toast.remove(), 500);
-        }, 3000);
+    function showToast(msg, type='success') {
+        const c = document.getElementById('toast-container');
+        const t = document.createElement('div');
+        t.className = `toast ${type}`;
+        t.innerText = msg;
+        c.appendChild(t);
+        setTimeout(() => { t.style.opacity='0'; setTimeout(()=>t.remove(), 500); }, 4000);
     }
 
-    function saveToDisk() {
-        localStorage.setItem("investments_v12", JSON.stringify(investments));
-        localStorage.setItem("models_v12", JSON.stringify(models));
-        localStorage.setItem("readNews_v12", JSON.stringify(readNews));
+    async function updateAllPrices() {
+        const btn = document.getElementById("updateBtn");
+        btn.innerText = "⏳ Forbinder..."; btn.disabled = true;
+        let successCount = 0;
+        let failCount = 0;
+
+        try {
+            // Prøv en alternativ proxy hvis den første fejler
+            const proxy = "https://api.allorigins.win/raw?url=";
+            
+            // 1. Valuta
+            const fxUrl = encodeURIComponent(`https://query1.finance.yahoo.com/v7/finance/quote?symbols=DKK=X,EURDKK=X,GBPDKK=X`);
+            const fxRes = await fetch(proxy + fxUrl);
+            const fxData = await fxRes.json();
+            if (fxData.quoteResponse.result) {
+                fxRates.USD = fxData.quoteResponse.result.find(r => r.symbol === "DKK=X")?.regularMarketPrice || fxRates.USD;
+                fxRates.EUR = fxData.quoteResponse.result.find(r => r.symbol === "EURDKK=X")?.regularMarketPrice || fxRates.EUR;
+                fxRates.GBP = fxData.quoteResponse.result.find(r => r.symbol === "GBPDKK=X")?.regularMarketPrice || fxRates.GBP;
+            }
+
+            // 2. Aktier (Hent én efter én for at undgå blokering)
+            for (let i = 0; i < investments.length; i++) {
+                try {
+                    const stockUrl = encodeURIComponent(`https://query1.finance.yahoo.com/v7/finance/quote?symbols=${investments[i].name}`);
+                    const res = await fetch(proxy + stockUrl);
+                    const data = await res.json();
+                    if (data.quoteResponse.result && data.quoteResponse.result[0]) {
+                        investments[i].currentPrice = data.quoteResponse.result[0].regularMarketPrice;
+                        successCount++;
+                    } else { failCount++; }
+                } catch (e) { failCount++; }
+            }
+
+            localStorage.setItem("investments_v13", JSON.stringify(investments));
+            render();
+            
+            if (failCount > 0) {
+                showToast(`Opdateret: ${successCount}. Kunne ikke hente ${failCount} aktier.`, 'danger');
+            } else {
+                showToast(`Succes! Alle ${successCount} priser er opdateret.`, 'success');
+            }
+        } catch (e) {
+            showToast("Netværksfejl. Yahoo blokerer midlertidigt. Prøv igen om 2 min.", "danger");
+        } finally {
+            btn.innerText = "🔄 Opdater live data"; btn.disabled = false;
+        }
     }
 
+    // --- Hjælpefunktioner ---
     function showTab(id, btn) {
         document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
         document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
@@ -132,89 +149,39 @@
         if(id === 'dashboard') buildModelDropdowns();
     }
 
-    async function updateAllPrices() {
-        const btn = document.getElementById("updateBtn");
-        btn.innerText = "⏳ Opdaterer...";
-        btn.disabled = true;
-
-        try {
-            const fxRes = await fetch(`https://corsproxy.io/?https://query1.finance.yahoo.com/v7/finance/quote?symbols=DKK=X,EURDKK=X,GBPDKK=X`);
-            const fxData = await fxRes.json();
-            if (fxData.quoteResponse.result) {
-                fxRates.USD = fxData.quoteResponse.result.find(r => r.symbol === "DKK=X").regularMarketPrice;
-                fxRates.EUR = fxData.quoteResponse.result.find(r => r.symbol === "EURDKK=X").regularMarketPrice;
-                fxRates.GBP = fxData.quoteResponse.result.find(r => r.symbol === "GBPDKK=X").regularMarketPrice;
-            }
-
-            for (let i = 0; i < investments.length; i++) {
-                const res = await fetch(`https://corsproxy.io/?https://query1.finance.yahoo.com/v7/finance/quote?symbols=${investments[i].name}`);
-                const data = await res.json();
-                if (data.quoteResponse.result && data.quoteResponse.result[0]) {
-                    investments[i].currentPrice = data.quoteResponse.result[0].regularMarketPrice;
-                }
-            }
-            saveToDisk();
-            render();
-            showToast(`Priser opdateret for ${investments.length} aktier`, 'info');
-        } catch (e) {
-            showToast("Fejl ved hentning af data", 'danger');
-        } finally {
-            btn.innerText = "🔄 Opdater live data";
-            btn.disabled = false;
-        }
-    }
-
     function saveInvestment() {
         const ticker = document.getElementById("name").value.toUpperCase();
+        if(!ticker) return showToast("Mangler Ticker", "danger");
         const selections = {};
         document.querySelectorAll('.model-picker').forEach(sel => { selections[sel.dataset.model] = sel.value; });
-        
         const data = {
             name: ticker,
-            quantity: parseFloat(document.getElementById("quantity").value),
-            buyPrice: parseFloat(document.getElementById("buyPrice").value),
-            currentPrice: parseFloat(document.getElementById("currentPrice").value),
+            quantity: parseFloat(document.getElementById("quantity").value) || 0,
+            buyPrice: parseFloat(document.getElementById("buyPrice").value) || 0,
+            currentPrice: parseFloat(document.getElementById("currentPrice").value) || 0,
             currency: document.getElementById("currency").value,
             allocations: selections
         };
-
-        if (editingIndex > -1) {
-            investments[editingIndex] = data;
-            showToast(`Ændringer gemt for ${ticker}`);
-        } else {
-            investments.push(data);
-            showToast(`${ticker} er tilføjet til porteføljen`);
-        }
-
-        saveToDisk(); resetForm(); render();
+        if (editingIndex > -1) investments[editingIndex] = data;
+        else investments.push(data);
+        localStorage.setItem("investments_v13", JSON.stringify(investments));
+        resetForm(); render();
+        showToast(ticker + " gemt!");
     }
 
-    function deleteInvestment(idx) {
-        const ticker = investments[idx].name;
-        if(confirm(`Vil du slette ${ticker}?`)) {
-            investments.splice(idx, 1);
-            saveToDisk();
-            render();
-            showToast(`${ticker} blev slettet`, 'danger');
-        }
-    }
-
-    function buildModelDropdowns() {
-        const area = document.getElementById("modelSelectionArea");
-        area.innerHTML = models.map(m => `
-            <div>
-                <label style="font-size:11px; font-weight:bold; color: #64748b;">${m.name.toUpperCase()}</label>
-                <select class="model-picker" data-model="${m.name}" style="width:100%">
-                    <option value="">-- Ingen --</option>
-                    ${m.hierarchy.map(h => h.sub.map(s => `<option value="${h.name} > ${s.name}">${h.name} > ${s.name}</option>`).join('')).join('')}
-                </select>
-            </div>
-        `).join('');
+    function render() {
+        const body = document.getElementById("dashboardBody");
+        body.innerHTML = investments.map((i, idx) => {
+            const tags = Object.entries(i.allocations || {}).map(([m, v]) => v ? `<span class="tag">${v}</span>` : '').join('');
+            const valDKK = i.quantity * i.currentPrice * (fxRates[i.currency] || 1);
+            return `<tr><td><b>${i.name}</b></td><td>${tags}</td><td>${fmt.format(valDKK)}</td>
+                <td><button onclick="editInvestment(${idx})" style="background:#f59e0b">Ret</button>
+                <button onclick="investments.splice(${idx},1);render();" style="background:red">X</button></td></tr>`;
+        }).join('');
     }
 
     function editInvestment(idx) {
-        editingIndex = idx;
-        const i = investments[idx];
+        editingIndex = idx; const i = investments[idx];
         document.getElementById("name").value = i.name;
         document.getElementById("quantity").value = i.quantity;
         document.getElementById("buyPrice").value = i.buyPrice;
@@ -225,87 +192,26 @@
             if (i.allocations && i.allocations[sel.dataset.model]) sel.value = i.allocations[sel.dataset.model];
         });
         document.getElementById("formTitle").innerText = "📝 Retter: " + i.name;
-        document.getElementById("addBtn").innerText = "Opdater";
         document.getElementById("cancelBtn").style.display = "inline-block";
-        document.getElementById("inputCard").classList.add("edit-mode");
         window.scrollTo(0,0);
     }
 
     function resetForm() {
-        editingIndex = -1;
-        document.getElementById("formTitle").innerText = "➕ Tilføj/Ret Investering";
-        document.getElementById("addBtn").innerText = "Gem investering";
+        editingIndex = -1; document.getElementById("formTitle").innerText = "➕ Tilføj/Ret Investering";
         document.getElementById("cancelBtn").style.display = "none";
-        document.getElementById("inputCard").classList.remove("edit-mode");
         ["name", "quantity", "buyPrice", "currentPrice"].forEach(id => document.getElementById(id).value = "");
         buildModelDropdowns();
     }
 
-    function render() {
-        const body = document.getElementById("dashboardBody");
-        body.innerHTML = investments.map((i, idx) => {
-            const tags = Object.entries(i.allocations || {}).map(([m, v]) => v ? `<span class="tag">${v}</span>` : '').join('');
-            const valDKK = i.quantity * i.currentPrice * (fxRates[i.currency] || 1);
-            return `<tr>
-                <td><b>${i.name}</b></td>
-                <td>${tags}</td>
-                <td>${fmt.format(valDKK)}</td>
-                <td>
-                    <button onclick="editInvestment(${idx})" style="background:#f59e0b; padding: 5px 10px;">Ret</button>
-                    <button onclick="deleteInvestment(${idx})" style="background:red; padding: 5px 10px;">X</button>
-                </td>
-            </tr>`;
-        }).join('');
+    function buildModelDropdowns() {
+        const area = document.getElementById("modelSelectionArea");
+        area.innerHTML = models.map(m => `<div><label style="font-size:11px;font-weight:bold">${m.name}</label>
+            <select class="model-picker" data-model="${m.name}" style="width:100%"><option value="">-- Ingen --</option>
+            ${m.hierarchy.map(h => h.sub.map(s => `<option value="${h.name} > ${s.name}">${h.name} > ${s.name}</option>`).join('')).join('')}
+            </select></div>`).join('');
     }
 
-    // (Allokering & Nyheder funktioner forbliver de samme som v11)
-    function createNewModel() {
-        const name = prompt("Modelnavn:");
-        if (name) { models.push({ name: name, hierarchy: [] }); saveToDisk(); renderAllocation(); showToast(`Model "${name}" oprettet`); }
-    }
-
-    function renderAllocation() {
-        const container = document.getElementById("modelsContainer");
-        container.innerHTML = models.map((m, mIdx) => `
-            <div class="card" style="border:1px solid #ddd">
-                <div style="display:flex; justify-content:space-between"><h3>${m.name}</h3>
-                <button onclick="models.splice(${mIdx},1); saveToDisk(); renderAllocation();" style="background:red">Slet model</button></div>
-                ${m.hierarchy.map((h, hIdx) => `
-                    <div style="margin-left:20px; margin-top:10px; background:#f1f5f9; padding:10px; border-radius:5px;">
-                        <input value="${h.name}" onchange="models[${mIdx}].hierarchy[${hIdx}].name=this.value; saveToDisk();">
-                        <button onclick="models[${mIdx}].hierarchy[${hIdx}].sub.push({name:'Nyt under-emne', pct:0}); renderAllocation();">+ Under-emne</button>
-                        <div style="margin-top:5px">
-                            ${h.sub.map((s, sIdx) => `
-                                <div style="display:flex; gap:5px; margin-bottom:2px">
-                                    <input value="${s.name}" onchange="models[${mIdx}].hierarchy[${hIdx}].sub[${sIdx}].name=this.value; saveToDisk();" placeholder="Navn">
-                                    <input type="number" value="${s.pct}" onchange="models[${mIdx}].hierarchy[${hIdx}].sub[${sIdx}].pct=this.value; saveToDisk();" style="width:50px">%
-                                </div>
-                            `).join('')}
-                        </div>
-                    </div>
-                `).join('')}
-                <button onclick="models[${mIdx}].hierarchy.push({name:'Nyt Over-emne', sub:[]}); renderAllocation();" style="margin-top:10px">+ Over-emne</button>
-            </div>
-        `).join('');
-    }
-
-    async function loadNews() {
-        const list = document.getElementById("newsList");
-        if (!investments.length) return;
-        list.innerHTML = "Henter nyheder...";
-        try {
-            const res = await fetch(`https://corsproxy.io/?https://query1.finance.yahoo.com/v1/finance/search?q=${investments.map(i=>i.name).join(',')}`);
-            const data = await res.json();
-            list.innerHTML = data.news.map(n => `
-                <div class="news-item">
-                    ${!readNews.includes(n.uuid) ? '<span class="unread-dot">•</span>' : ''}
-                    <a href="${n.link}" target="_blank" onclick="if(!readNews.includes('${n.uuid}')){readNews.push('${n.uuid}');saveToDisk();}" style="text-decoration:none; color:var(--text); font-weight:bold;">${n.title}</a>
-                </div>
-            `).join('');
-        } catch (e) { list.innerHTML = "Kunne ikke hente nyheder."; }
-    }
-
-    window.onload = () => { buildModelDropdowns(); render(); };
+    window.onload = () => { render(); buildModelDropdowns(); };
 </script>
 </body>
 </html>
