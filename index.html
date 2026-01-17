@@ -3,68 +3,60 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Invest-Master Pro v9.0</title>
+    <title>Invest-Master Pro v10.0</title>
     <style>
         :root { --primary: #2563eb; --success: #16a34a; --danger: #dc2626; --bg: #f0f2f5; --card-bg: #ffffff; --text: #1e293b; }
         body { font-family: 'Segoe UI', sans-serif; background: var(--bg); padding: 20px; color: var(--text); }
-        .container { max-width: 1100px; margin: auto; }
+        .container { max-width: 1200px; margin: auto; }
         .tabs { display: flex; gap: 10px; margin-bottom: 20px; border-bottom: 2px solid #ddd; padding-bottom: 10px; }
         .tab-btn { padding: 10px 20px; cursor: pointer; border-radius: 8px; border: none; background: #e2e8f0; font-weight: bold; }
         .tab-btn.active { background: var(--primary); color: white; }
         .tab-content { display: none; }
         .tab-content.active { display: block; }
         .card { background: var(--card-bg); padding: 20px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); margin-bottom: 20px; }
-        .cards-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px; margin-bottom: 20px; }
-        input, select, button { padding: 10px; border-radius: 6px; border: 1px solid #ddd; font-size: 14px; }
+        input, select, button { padding: 10px; border-radius: 6px; border: 1px solid #ddd; }
         button { background: var(--primary); color: white; border: none; cursor: pointer; font-weight: bold; }
-        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-        th, td { padding: 12px; border-bottom: 1px solid #eee; text-align: right; }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { padding: 12px; border-bottom: 1px solid #eee; text-align: right; font-size: 14px; }
         th:first-child, td:first-child { text-align: left; }
-        .positive { color: var(--success); font-weight: bold; }
-        .negative { color: var(--danger); font-weight: bold; }
-        .model-selector { display: flex; gap: 10px; align-items: center; margin-bottom: 20px; background: #e2e8f0; padding: 10px; border-radius: 8px; }
+        .edit-mode { background: #fef3c7 !important; border: 2px solid #f59e0b !important; }
+        .tag { background: #e2e8f0; padding: 2px 6px; border-radius: 4px; font-size: 11px; margin-right: 4px; display: inline-block; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h1>📊 Invest-Master Pro v9.0</h1>
+    <h1>📊 Invest-Master Pro v10.0</h1>
 
     <div class="tabs">
         <button class="tab-btn active" onclick="showTab('dashboard', this)">🏠 Dashboard</button>
         <button class="tab-btn" onclick="showTab('allocation', this); renderAllocation();">📁 Allokeringer</button>
-        <button class="tab-btn" onclick="showTab('news', this); loadNews();">📰 Nyheder</button>
     </div>
 
     <div id="dashboard" class="tab-content active">
-        <div class="cards-grid">
-            <div class="card">Investeret<br><b id="invested">0 kr</b></div>
-            <div class="card">Værdi<br><b id="value">0 kr</b></div>
-            <div class="card">Afkast<br><b id="profit">0 kr</b></div>
-            <div class="card">Afkast %<br><b id="profitPct">0%</b></div>
-        </div>
-
-        <div class="card">
-            <h2>➕ Tilføj ny investering</h2>
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px;">
-                <input id="name" placeholder="Ticker">
+        <div class="card" id="inputCard">
+            <h2 id="formTitle">➕ Tilføj/Ret Investering</h2>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px;">
+                <input id="name" placeholder="Ticker (fx III)">
                 <input id="quantity" type="number" placeholder="Antal">
                 <input id="buyPrice" type="number" placeholder="Købspris">
                 <input id="currentPrice" type="number" placeholder="Nuv. pris">
-                <select id="currency"><option value="DKK">DKK</option><option value="USD">USD</option><option value="EUR">EUR</option></select>
-                <select id="mainGroupSelect" onchange="updateSubDropdown()"></select>
-                <select id="subGroupSelect"></select>
+                <select id="currency"><option value="USD">USD</option><option value="DKK">DKK</option><option value="EUR">EUR</option></select>
             </div>
-            <button onclick="addInvestment()" style="margin-top: 15px; width: 100%;">Gem investering</button>
+            
+            <div id="modelSelectionArea" style="margin-top:15px; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; background: #f8fafc; padding: 10px; border-radius: 8px;">
+                </div>
+
+            <div style="margin-top: 15px; display: flex; gap: 10px;">
+                <button id="addBtn" onclick="saveInvestment()" style="flex: 2;">Gem investering</button>
+                <button id="cancelBtn" onclick="resetForm()" style="flex: 1; background: #64748b; display: none;">Annuller</button>
+            </div>
         </div>
 
         <div class="card">
-            <div style="display:flex; justify-content:space-between; margin-bottom:10px">
-                <h2>Portefølje</h2>
-                <button onclick="updateAll()" id="updateBtn">🔄 Opdater live data</button>
-            </div>
-            <table id="portfolioTable">
-                <thead><tr><th>Aktiv</th><th>Kategori</th><th>Værdi (DKK)</th><th>Handling</th></tr></thead>
+            <h2>Portefølje</h2>
+            <table>
+                <thead><tr><th>Aktiv</th><th>Allokeringer</th><th>Værdi (DKK)</th><th>Handling</th></tr></thead>
                 <tbody id="dashboardBody"></tbody>
             </table>
         </div>
@@ -72,47 +64,27 @@
 
     <div id="allocation" class="tab-content">
         <div class="card">
-            <h2>📋 Dine Allokerings-modeller</h2>
-            <div class="model-selector">
-                <span>Vælg model:</span>
-                <select id="modelPicker" onchange="switchModel(this.value)"></select>
-                <button onclick="createNewModel()" style="background:var(--success)">+ Ny Model</button>
-                <button onclick="deleteCurrentModel()" style="background:var(--danger)">Slet Model</button>
+            <h2>📋 Administrer Allokerings-modeller</h2>
+            <div style="display:flex; gap:10px; margin-bottom:20px;">
+                <button onclick="createNewModel()" style="background:var(--success)">+ Opret ny model (fx Sektor eller Land)</button>
             </div>
-            <div id="modelEditor"></div>
-            <button onclick="addMainCategory()" style="margin-top: 15px; background: var(--primary);">+ Tilføj over-emne</button>
+            <div id="modelsContainer"></div>
         </div>
-
-        <div class="card">
-            <h2 id="statusTitle">⚖️ Rebalancering</h2>
-            <table>
-                <thead><tr><th>Emne</th><th>Værdi (DKK)</th><th>Nuv %</th><th>Mål %</th><th>Handling</th></tr></thead>
-                <tbody id="allocStatusBody"></tbody>
-            </table>
-        </div>
-    </div>
-
-    <div id="news" class="tab-content">
-        <div class="card"><h2>📰 Nyheder</h2><div id="newsList">Henter nyheder...</div></div>
     </div>
 </div>
 
 <script>
-    let investments = JSON.parse(localStorage.getItem("investments")) || [];
-    let models = JSON.parse(localStorage.getItem("allocModels")) || [
-        { 
-            name: "Hovedstrategi", 
-            hierarchy: [{ name: "ETF", sub: [{ name: "Global", pct: 100 }] }] 
-        }
+    let investments = JSON.parse(localStorage.getItem("investments_v10")) || [];
+    let models = JSON.parse(localStorage.getItem("models_v10")) || [
+        { name: "Strategi", hierarchy: [{ name: "Aktier", sub: [{ name: "Vækst", pct: 100 }] }] }
     ];
-    let activeModelIdx = parseInt(localStorage.getItem("activeModelIdx")) || 0;
-    let fxRates = { USD: 7.0, EUR: 7.45, DKK: 1 };
-    const fmt = new Intl.NumberFormat('da-DK', { style: 'currency', currency: 'DKK', maximumFractionDigits: 0 });
+    let editingIndex = -1;
+    let fxRates = { USD: 6.85, EUR: 7.45, DKK: 1 };
+    const fmt = new Intl.NumberFormat('da-DK', { style: 'currency', currency: 'DKK' });
 
-    function save() {
-        localStorage.setItem("investments", JSON.stringify(investments));
-        localStorage.setItem("allocModels", JSON.stringify(models));
-        localStorage.setItem("activeModelIdx", activeModelIdx);
+    function saveToDisk() {
+        localStorage.setItem("investments_v10", JSON.stringify(investments));
+        localStorage.setItem("models_v10", JSON.stringify(models));
     }
 
     function showTab(id, btn) {
@@ -120,161 +92,96 @@
         document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
         document.getElementById(id).classList.add('active');
         btn.classList.add('active');
-        if(id === 'dashboard') updateMainDropdown();
+        if(id === 'dashboard') buildModelDropdowns();
     }
 
-    // --- MODEL LOGIK ---
+    // --- ALLOKERING LOGIK ---
     function createNewModel() {
-        const name = prompt("Navn på den nye model:");
-        if (!name) return;
-        models.push({ name: name, hierarchy: [] });
-        activeModelIdx = models.length - 1;
-        save();
-        renderAllocation();
-    }
-
-    function switchModel(idx) {
-        activeModelIdx = parseInt(idx);
-        save();
-        renderAllocation();
-    }
-
-    function deleteCurrentModel() {
-        if (models.length <= 1) return alert("Du skal have mindst én model.");
-        if (confirm("Slet denne model?")) {
-            models.splice(activeModelIdx, 1);
-            activeModelIdx = 0;
-            save();
-            renderAllocation();
-        }
-    }
-
-    // --- ALLOKERING EDITOR ---
-    function addMainCategory() {
-        models[activeModelIdx].hierarchy.push({ name: "Nyt emne", sub: [] });
-        renderAllocation();
-    }
-
-    function addSubCategory(mIdx) {
-        models[activeModelIdx].hierarchy[mIdx].sub.push({ name: "Nyt under-emne", pct: 0 });
-        renderAllocation();
+        const name = prompt("Navn på model (fx Sektor, Land eller Depot):");
+        if (name) { models.push({ name: name, hierarchy: [] }); saveToDisk(); renderAllocation(); }
     }
 
     function renderAllocation() {
-        const picker = document.getElementById("modelPicker");
-        picker.innerHTML = models.map((m, i) => `<option value="${i}" ${i === activeModelIdx ? 'selected' : ''}>${m.name}</option>`).join('');
-        
-        const currentModel = models[activeModelIdx];
-        document.getElementById("statusTitle").textContent = "⚖️ Rebalancering: " + currentModel.name;
-
-        const editor = document.getElementById("modelEditor");
-        editor.innerHTML = currentModel.hierarchy.map((main, mIdx) => `
-            <div style="border: 1px solid #ddd; padding: 15px; border-radius: 8px; margin-bottom: 10px;">
-                <div style="display:flex; gap:10px; margin-bottom:10px;">
-                    <input value="${main.name}" onchange="models[activeModelIdx].hierarchy[${mIdx}].name=this.value; save();" style="font-weight:bold; flex:1">
-                    <button onclick="models[activeModelIdx].hierarchy.splice(${mIdx},1); save(); renderAllocation();" style="background:red">Slet</button>
+        const container = document.getElementById("modelsContainer");
+        container.innerHTML = models.map((m, mIdx) => `
+            <div class="card" style="border:1px solid #ddd">
+                <div style="display:flex; justify-content:space-between">
+                    <h3>Model: ${m.name}</h3>
+                    <button onclick="models.splice(${mIdx},1); saveToDisk(); renderAllocation();" style="background:red">Slet model</button>
                 </div>
-                <div style="margin-left: 20px;">
-                    ${main.sub.map((s, sIdx) => `
-                        <div style="display:flex; gap:10px; margin-bottom:5px;">
-                            <input value="${s.name}" onchange="models[activeModelIdx].hierarchy[${mIdx}].sub[${sIdx}].name=this.value; save();" style="flex:2">
-                            <input type="number" value="${s.pct}" onchange="models[activeModelIdx].hierarchy[${mIdx}].sub[${sIdx}].pct=parseFloat(this.value); save(); renderAllocation();" style="width:60px"> %
-                            <button onclick="models[activeModelIdx].hierarchy[${mIdx}].sub.splice(${sIdx},1); save(); renderAllocation();" style="background:gray">X</button>
+                ${m.hierarchy.map((h, hIdx) => `
+                    <div style="margin-left:20px; margin-top:10px; background:#f1f5f9; padding:10px; border-radius:5px;">
+                        <input value="${h.name}" onchange="models[${mIdx}].hierarchy[${hIdx}].name=this.value; saveToDisk();">
+                        <button onclick="addSub(${mIdx}, ${hIdx})">+ Under-emne</button>
+                        <div style="margin-top:5px">
+                            ${h.sub.map((s, sIdx) => `
+                                <div style="display:flex; gap:5px; margin-bottom:2px">
+                                    <input value="${s.name}" onchange="models[${mIdx}].hierarchy[${hIdx}].sub[${sIdx}].name=this.value; saveToDisk();" placeholder="Navn">
+                                    <input type="number" value="${s.pct}" onchange="models[${mIdx}].hierarchy[${hIdx}].sub[${sIdx}].pct=this.value; saveToDisk();" style="width:50px">%
+                                </div>
+                            `).join('')}
                         </div>
-                    `).join('')}
-                    <button onclick="addSubCategory(${mIdx})" style="background:var(--success); font-size:11px;">+ Under-emne</button>
-                </div>
+                    </div>
+                `).join('')}
+                <button onclick="models[${mIdx}].hierarchy.push({name:'Nyt Over-emne', sub:[]}); renderAllocation();" style="margin-top:10px">+ Tilføj Over-emne</button>
             </div>
         `).join('');
+    }
 
-        // Status beregning
-        let totalVal = investments.reduce((sum, i) => sum + (i.quantity * i.currentPrice * (fxRates[i.currency]||1)), 0);
-        let html = "";
-        currentModel.hierarchy.forEach(main => {
-            main.sub.forEach(sub => {
-                const val = investments.filter(i => i.mainGroup === main.name && i.subGroup === sub.name)
-                                      .reduce((sum, i) => sum + (i.quantity * i.currentPrice * (fxRates[i.currency]||1)), 0);
-                const curPct = totalVal ? (val / totalVal * 100) : 0;
-                const targetVal = totalVal * (sub.pct / 100);
-                const diff = targetVal - val;
-                html += `<tr><td>${main.name} > ${sub.name}</td><td>${fmt.format(val)}</td><td>${curPct.toFixed(1)}%</td><td>${sub.pct}%</td><td class="${diff >= 0 ? 'positive' : 'negative'}">${fmt.format(diff)}</td></tr>`;
-            });
+    function addSub(mIdx, hIdx) {
+        models[mIdx].hierarchy[hIdx].sub.push({name: "Nyt under-emne", pct: 0});
+        renderAllocation();
+    }
+
+    // --- DASHBOARD & REDIGERING ---
+    function buildModelDropdowns() {
+        const area = document.getElementById("modelSelectionArea");
+        area.innerHTML = models.map(m => `
+            <div>
+                <label style="font-size:12px; display:block">${m.name}</label>
+                <select class="model-picker" data-model="${m.name}" style="width:100%">
+                    <option value="">-- Vælg --</option>
+                    ${m.hierarchy.map(h => h.sub.map(s => `<option value="${h.name} > ${s.name}">${h.name} > ${s.name}</option>`).join('')).join('')}
+                </select>
+            </div>
+        `).join('');
+    }
+
+    function saveInvestment() {
+        const selections = {};
+        document.querySelectorAll('.model-picker').forEach(sel => {
+            selections[sel.dataset.model] = sel.value;
         });
-        document.getElementById("allocStatusBody").innerHTML = html;
-    }
 
-    // --- DASHBOARD LOGIK ---
-    function updateMainDropdown() {
-        const sel = document.getElementById("mainGroupSelect");
-        const currentModel = models[activeModelIdx];
-        sel.innerHTML = currentModel.hierarchy.map(m => `<option value="${m.name}">${m.name}</option>`).join('');
-        updateSubDropdown();
-    }
-
-    function updateSubDropdown() {
-        const mainName = document.getElementById("mainGroupSelect").value;
-        const main = models[activeModelIdx].hierarchy.find(m => m.name === mainName);
-        const sel = document.getElementById("subGroupSelect");
-        if (main) sel.innerHTML = main.sub.map(s => `<option value="${s.name}">${s.name}</option>`).join('');
-    }
-
-    function addInvestment() {
-        const i = {
+        const data = {
             name: document.getElementById("name").value.toUpperCase(),
             quantity: parseFloat(document.getElementById("quantity").value),
             buyPrice: parseFloat(document.getElementById("buyPrice").value),
             currentPrice: parseFloat(document.getElementById("currentPrice").value),
             currency: document.getElementById("currency").value,
-            mainGroup: document.getElementById("mainGroupSelect").value,
-            subGroup: document.getElementById("subGroupSelect").value
+            allocations: selections
         };
-        if (!i.name || isNaN(i.quantity)) return;
-        investments.push(i);
-        save(); render();
+
+        if (editingIndex > -1) investments[editingIndex] = data;
+        else investments.push(data);
+
+        saveToDisk(); resetForm(); render();
     }
 
-    function render() {
-        let tBuy = 0, tVal = 0;
-        investments.forEach(i => {
-            const r = fxRates[i.currency] || 1;
-            tBuy += (i.quantity * i.buyPrice) * r;
-            tVal += (i.quantity * i.currentPrice) * r;
-        });
-        document.getElementById("invested").textContent = fmt.format(tBuy);
-        document.getElementById("value").textContent = fmt.format(tVal);
-        document.getElementById("profit").textContent = fmt.format(tVal - tBuy);
-        document.getElementById("profitPct").textContent = tBuy ? ((tVal-tBuy)/tBuy*100).toFixed(2) + "%" : "0%";
+    function editInvestment(idx) {
+        editingIndex = idx;
+        const i = investments[idx];
+        document.getElementById("name").value = i.name;
+        document.getElementById("quantity").value = i.quantity;
+        document.getElementById("buyPrice").value = i.buyPrice;
+        document.getElementById("currentPrice").value = i.currentPrice;
+        document.getElementById("currency").value = i.currency;
         
-        const body = document.getElementById("dashboardBody");
-        body.innerHTML = investments.map((i, idx) => `
-            <tr>
-                <td><b>${i.name}</b></td>
-                <td><small>${i.mainGroup} > ${i.subGroup}</small></td>
-                <td>${fmt.format(i.quantity * i.currentPrice * (fxRates[i.currency]||1))}</td>
-                <td><button onclick="investments.splice(${idx},1);save();render();" style="background:red">X</button></td>
-            </tr>
-        `).join('');
-    }
-
-    async function updateAll() {
-        const btn = document.getElementById("updateBtn");
-        btn.textContent = "Henter...";
-        try {
-            const fxRes = await fetch(`https://corsproxy.io/?https://query1.finance.yahoo.com/v7/finance/quote?symbols=DKK=X,EURDKK=X`);
-            const fxData = await fxRes.json();
-            fxRates.USD = fxData.quoteResponse.result.find(r => r.symbol === "DKK=X").regularMarketPrice;
-            fxRates.EUR = fxData.quoteResponse.result.find(r => r.symbol === "EURDKK=X").regularMarketPrice;
-            for (let i = 0; i < investments.length; i++) {
-                const res = await fetch(`https://corsproxy.io/?https://query1.finance.yahoo.com/v7/finance/quote?symbols=${investments[i].name}`);
-                const d = await res.json();
-                if (d.quoteResponse.result[0]) investments[i].currentPrice = d.quoteResponse.result[0].regularMarketPrice;
+        buildModelDropdowns();
+        document.querySelectorAll('.model-picker').forEach(sel => {
+            if (i.allocations && i.allocations[sel.dataset.model]) {
+                sel.value = i.allocations[sel.dataset.model];
             }
-        } catch(e) {}
-        save(); render();
-        btn.textContent = "🔄 Opdater live data";
-    }
+        });
 
-    window.onload = () => { render(); updateMainDropdown(); };
-</script>
-</body>
-</html>
+        document.getElementById("formTitle").innerText = "📝 Ret aktie
