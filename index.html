@@ -1,90 +1,74 @@
 <!DOCTYPE html>
 <html lang="da">
 <head>
-  <meta charset="UTF-8" />
-  <title>Investerings-tracker</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      padding: 20px;
-      max-width: 800px;
-      margin: auto;
-    }
-    input, button {
-      padding: 8px;
-      margin: 5px 0;
-      width: 100%;
-    }
-    .cards {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-      gap: 10px;
-      margin-bottom: 20px;
-    }
-    .card {
-      border: 1px solid #ddd;
-      padding: 10px;
-      border-radius: 6px;
-    }
-  </style>
-</head>
-<body>
+<meta charset="UTF-8">
+<title>Investerings-tracker</title>
 
-<h1>Investerings-dashboard</h1>
+<style>
+body {
+  font-family: system-ui, sans-serif;
+  background: #f5f7fa;
+  margin: 0;
+  padding: 20px;
+}
+h1, h2 {
+  margin-top: 0;
+}
+.container {
+  max-width: 1000px;
+  margin: auto;
+}
+.cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 12px;
+  margin-bottom: 20px;
+}
+.card {
+  background: white;
+  padding: 16px;
+  border-radius: 10px;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+}
+input, button {
+  padding: 10px;
+  margin: 5px 0;
+  width: 100%;
+}
+button {
+  background: #2563eb;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+}
+button:hover {
+  background: #1e4ed8;
+}
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+th, td {
+  padding: 8px;
+  border-bottom: 1px solid #ddd;
+  text-align: right;
+}
+th:first-child, td:first-child {
+  text-align: left;
+}
+.section {
+  margin-top: 30px;
+}
+.positive { color: green; }
+.negative { color: red; }
+</style>
+</head>
+
+<body>
+<div class="container">
+
+<h1>📊 Investerings-dashboard</h1>
 
 <div class="cards">
-  <div class="card">Investeret:<br><b id="invested">0 kr</b></div>
-  <div class="card">Værdi:<br><b id="value">0 kr</b></div>
-  <div class="card">Afkast:<br><b id="profit">0 kr</b></div>
-  <div class="card">Afkast %:<br><b id="profitPct">0%</b></div>
-</div>
-
-<h3>Tilføj investering</h3>
-
-<input id="name" placeholder="Aktiv (fx AAPL)" />
-<input id="quantity" type="number" placeholder="Antal" />
-<input id="buyPrice" type="number" placeholder="Købspris" />
-<input id="currentPrice" type="number" placeholder="Nuværende pris" />
-<button onclick="addInvestment()">Tilføj</button>
-
-<h3>Investeringer</h3>
-<ul id="list"></ul>
-
-<script>
-  let investments = [];
-
-  function addInvestment() {
-    const name = document.getElementById("name").value;
-    const quantity = Number(document.getElementById("quantity").value);
-    const buyPrice = Number(document.getElementById("buyPrice").value);
-    const currentPrice = Number(document.getElementById("currentPrice").value);
-
-    if (!name) return;
-
-    investments.push({ name, quantity, buyPrice, currentPrice });
-    render();
-  }
-
-  function render() {
-    const invested = investments.reduce((s, i) => s + i.quantity * i.buyPrice, 0);
-    const value = investments.reduce((s, i) => s + i.quantity * i.currentPrice, 0);
-    const profit = value - invested;
-    const profitPct = invested ? (profit / invested) * 100 : 0;
-
-    document.getElementById("invested").innerText = invested.toFixed(2) + " kr";
-    document.getElementById("value").innerText = value.toFixed(2) + " kr";
-    document.getElementById("profit").innerText = profit.toFixed(2) + " kr";
-    document.getElementById("profitPct").innerText = profitPct.toFixed(2) + "%";
-
-    const list = document.getElementById("list");
-    list.innerHTML = "";
-    investments.forEach(i => {
-      const li = document.createElement("li");
-      li.innerText = `${i.name} – ${i.quantity} stk – ${(i.quantity * i.currentPrice).toFixed(2)} kr`;
-      list.appendChild(li);
-    });
-  }
-</script>
-
-</body>
-</html>
+  <div class="card">Investeret<br><b id="inve
