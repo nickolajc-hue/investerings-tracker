@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Invest-Master Pro v2.0</title>
+    <title>Invest-Master Pro v3.0</title>
 
     <style>
         :root {
@@ -25,9 +25,14 @@
         .tab-content { display: none; }
         .tab-content.active { display: block; }
 
+        /* Sub-tabs for Allokering */
+        .sub-tabs { display: flex; gap: 5px; margin-bottom: 15px; }
+        .sub-btn { padding: 5px 12px; font-size: 13px; cursor: pointer; border-radius: 5px; border: 1px solid #ccc; background: white; }
+        .sub-btn.active { background: #64748b; color: white; border-color: #64748b; }
+
         /* UI Elements */
         .card { background: var(--card-bg); padding: 20px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); margin-bottom: 20px; }
-        .cards-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 20px; }
+        .cards-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px; margin-bottom: 20px; }
         input, select, button { padding: 10px; border-radius: 6px; border: 1px solid #ddd; font-size: 14px; }
         button { background: var(--primary); color: white; border: none; cursor: pointer; font-weight: bold; }
         
@@ -38,18 +43,11 @@
         .positive { color: var(--success); font-weight: bold; }
         .negative { color: var(--danger); font-weight: bold; }
 
-        /* Modal / Pop-up */
         #updateModal {
             display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%;
             background: rgba(0,0,0,0.5); align-items: center; justify-content: center;
         }
-        .modal-content { background: white; padding: 30px; border-radius: 15px; max-width: 500px; width: 90%; position: relative; }
-        .close-modal { position: absolute; right: 20px; top: 15px; font-size: 24px; cursor: pointer; }
-
-        /* Nyheds-styling */
-        .news-item { border-bottom: 1px solid #eee; padding: 15px 0; }
-        .news-title { font-weight: bold; text-decoration: none; color: var(--text); display: block; margin-bottom: 5px; }
-        .news-date { font-size: 11px; color: #64748b; background: #f1f5f9; padding: 2px 6px; border-radius: 4px; }
+        .modal-content { background: white; padding: 30px; border-radius: 15px; max-width: 500px; width: 90%; position: relative; text-align: center; }
     </style>
 </head>
 
@@ -57,15 +55,9 @@
 
 <div id="updateModal">
     <div class="modal-content">
-        <span class="close-modal" onclick="closeModal()">&times;</span>
-        <h2>✨ Hvad er nyt? (v2.0)</h2>
-        <ul style="text-align: left; line-height: 1.8;">
-            <li><b>Ny fanen Allokering:</b> Nu er din planlægning adskilt fra din oversigt.</li>
-            <li><b>Sektorer:</b> Du kan nu vælge en kategori (Teknologi, Sundhed osv.) til dine aktier.</li>
-            <li><b>Forbedret navigation:</b> Skift hurtigt mellem Dashboard, Allokering og Nyheder.</li>
-            <li><b>Gemt hukommelse:</b> Appen husker nu, at du har læst denne besked!</li>
-        </ul>
-        <button onclick="closeModal()" style="width: 100%; margin-top: 15px;">Forstået!</button>
+        <h2>✨ Nyhed: Multi-Allokering (v3.0)</h2>
+        <p>Du kan nu analysere din portefølje på 3 måder: efter Type (Aktie/ETF), Land og Sektor!</p>
+        <button onclick="closeModal()" style="width: 100%;">Kom i gang</button>
     </div>
 </div>
 
@@ -74,7 +66,7 @@
 
     <div class="tabs">
         <button class="tab-btn active" onclick="showTab('dashboard', this)">🏠 Dashboard</button>
-        <button class="tab-btn" onclick="showTab('allocation', this)">📁 Allokering</button>
+        <button class="tab-btn" onclick="showTab('allocation', this); renderAllocation();">📁 Allokering</button>
         <button class="tab-btn" onclick="showTab('news', this); loadNews();">📰 Nyheder</button>
     </div>
 
@@ -87,32 +79,41 @@
         </div>
 
         <div class="card">
-            <h2>➕ Tilføj ny aktie</h2>
+            <h2>➕ Tilføj ny investering</h2>
             <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px;">
-                <input id="name" placeholder="Ticker (AAPL)">
+                <input id="name" placeholder="Ticker (f.eks. AAPL)">
                 <input id="quantity" type="number" placeholder="Antal">
                 <input id="buyPrice" type="number" placeholder="Købspris">
                 <input id="currentPrice" type="number" placeholder="Nuv. pris">
+                <select id="type">
+                    <option value="Aktie">Aktie</option>
+                    <option value="ETF">ETF</option>
+                </select>
+                <select id="country">
+                    <option value="Danmark">Danmark</option>
+                    <option value="USA">USA</option>
+                    <option value="Tyskland">Tyskland</option>
+                    <option value="Andet">Andet</option>
+                </select>
                 <select id="sector">
                     <option value="Teknologi">Teknologi</option>
                     <option value="Sundhed">Sundhed</option>
                     <option value="Finans">Finans</option>
                     <option value="Energi">Energi</option>
-                    <option value="Andet">Andet</option>
+                    <option value="Forbrug">Forbrug</option>
                 </select>
-                <input id="targetPct" type="number" placeholder="Mål %">
             </div>
             <button onclick="addInvestment()" style="margin-top: 15px; width: 100%;">Tilføj</button>
         </div>
 
         <div class="card">
-            <div style="display:flex; justify-content:space-between">
+            <div style="display:flex; justify-content:space-between; margin-bottom:10px">
                 <h2>Holdings</h2>
                 <button onclick="updateAllPrices()" id="updateBtn">🔄 Opdater priser</button>
             </div>
-            <table id="mainTable">
+            <table>
                 <thead>
-                    <tr><th>Aktiv</th><th>Sektor</th><th>Værdi</th><th>Afkast</th><th>Handling</th></tr>
+                    <tr><th>Aktiv</th><th>Type</th><th>Land</th><th>Værdi</th><th>Handling</th></tr>
                 </thead>
                 <tbody id="dashboardBody"></tbody>
             </table>
@@ -121,11 +122,22 @@
 
     <div id="allocation" class="tab-content">
         <div class="card">
-            <h2>📁 Mål-allokering vs. Virkelighed</h2>
-            <p>Her kan du se om dine sektorer eller aktier fylder for meget i forhold til din plan.</p>
+            <h2>📁 Allokerings-analyse</h2>
+            <div class="sub-tabs">
+                <button class="sub-btn active" onclick="setAllocView('type', this)">1: Aktie vs ETF</button>
+                <button class="sub-btn" onclick="setAllocView('country', this)">2: Lande</button>
+                <button class="sub-btn" onclick="setAllocView('sector', this)">3: Sektorer</button>
+            </div>
+            
+            <p id="allocDesc">Viser fordelingen af din portefølje baseret på aktivtype.</p>
+            
             <table>
                 <thead>
-                    <tr><th>Aktiv</th><th>Sektor</th><th>Nuv %</th><th>Mål %</th><th>Justér (DKK)</th></tr>
+                    <tr>
+                        <th id="allocHeader">Kategori</th>
+                        <th>Værdi</th>
+                        <th>Nuværende %</th>
+                    </tr>
                 </thead>
                 <tbody id="allocationBody"></tbody>
             </table>
@@ -141,14 +153,13 @@
 </div>
 
 <script>
-    const VERSION = "2.0";
+    const VERSION = "3.0";
     let investments = JSON.parse(localStorage.getItem("investments")) || [];
+    let currentAllocView = 'type'; 
     const fmt = new Intl.NumberFormat('da-DK', { style: 'currency', currency: 'DKK', maximumFractionDigits: 0 });
 
-    // POP-UP LOGIK
     window.onload = function() {
-        const lastSeenVersion = localStorage.getItem("lastSeenVersion");
-        if (lastSeenVersion !== VERSION) {
+        if (localStorage.getItem("lastSeenVersion") !== VERSION) {
             document.getElementById("updateModal").style.display = "flex";
         }
         render();
@@ -166,6 +177,16 @@
         btn.classList.add('active');
     }
 
+    function setAllocView(view, btn) {
+        currentAllocView = view;
+        document.querySelectorAll('.sub-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        
+        const labels = { type: 'Aktivtype', country: 'Land', sector: 'Sektor' };
+        document.getElementById('allocHeader').textContent = labels[view];
+        renderAllocation();
+    }
+
     function save() { localStorage.setItem("investments", JSON.stringify(investments)); }
 
     function addInvestment() {
@@ -174,8 +195,10 @@
             quantity: parseFloat(document.getElementById("quantity").value),
             buyPrice: parseFloat(document.getElementById("buyPrice").value),
             currentPrice: parseFloat(document.getElementById("currentPrice").value),
+            type: document.getElementById("type").value,
+            country: document.getElementById("country").value,
             sector: document.getElementById("sector").value,
-            targetPct: parseFloat(document.getElementById("targetPct").value) || 0
+            targetPct: 0 // Kan udvides til at have targets per kategori
         };
         if (!i.name || isNaN(i.quantity)) return;
         investments.push(i);
@@ -208,40 +231,43 @@
             totalValue += i.quantity * i.currentPrice;
         });
 
-        const profit = totalValue - totalInvested;
-        const profitPct = totalInvested ? (profit / totalInvested) * 100 : 0;
-
         document.getElementById("invested").textContent = fmt.format(totalInvested);
         document.getElementById("value").textContent = fmt.format(totalValue);
-        document.getElementById("profit").textContent = fmt.format(profit);
-        document.getElementById("profitPct").textContent = profitPct.toFixed(2) + "%";
+        document.getElementById("profit").textContent = fmt.format(totalValue - totalInvested);
+        document.getElementById("profitPct").textContent = totalInvested ? ((totalValue - totalInvested)/totalInvested*100).toFixed(2) + "%" : "0%";
 
-        // Dashboard Tabel
         const dashBody = document.getElementById("dashboardBody");
-        dashBody.innerHTML = investments.map((i, idx) => {
-            const val = i.quantity * i.currentPrice;
-            const p = val - (i.quantity * i.buyPrice);
-            return `<tr>
+        dashBody.innerHTML = investments.map((i, idx) => `
+            <tr>
                 <td><b>${i.name}</b></td>
-                <td>${i.sector}</td>
-                <td>${fmt.format(val)}</td>
-                <td class="${p >= 0 ? 'positive' : 'negative'}">${fmt.format(p)}</td>
+                <td>${i.type}</td>
+                <td>${i.country}</td>
+                <td>${fmt.format(i.quantity * i.currentPrice)}</td>
                 <td><button onclick="deleteInvestment(${idx})" style="background:red">X</button></td>
-            </tr>`;
-        }).join('');
+            </tr>
+        `).join('');
+        
+        if (document.getElementById('allocation').classList.contains('active')) renderAllocation();
+    }
 
-        // Allocation Tabel
+    function renderAllocation() {
+        let totalValue = investments.reduce((sum, i) => sum + (i.quantity * i.currentPrice), 0);
+        const groups = {};
+
+        // Gruppér data baseret på den valgte visning (type, country eller sector)
+        investments.forEach(i => {
+            const key = i[currentAllocView];
+            groups[key] = (groups[key] || 0) + (i.quantity * i.currentPrice);
+        });
+
         const allocBody = document.getElementById("allocationBody");
-        allocBody.innerHTML = investments.map(i => {
-            const val = i.quantity * i.currentPrice;
-            const curPct = totalValue ? (val / totalValue * 100) : 0;
-            const diff = (totalValue * (i.targetPct / 100)) - val;
+        allocBody.innerHTML = Object.keys(groups).map(key => {
+            const val = groups[key];
+            const pct = totalValue ? (val / totalValue * 100).toFixed(1) : 0;
             return `<tr>
-                <td>${i.name}</td>
-                <td>${i.sector}</td>
-                <td>${curPct.toFixed(1)}%</td>
-                <td>${i.targetPct}%</td>
-                <td class="${diff >= 0 ? 'positive' : 'negative'}">${fmt.format(diff)}</td>
+                <td><b>${key}</b></td>
+                <td>${fmt.format(val)}</td>
+                <td>${pct}%</td>
             </tr>`;
         }).join('');
     }
@@ -255,9 +281,9 @@
             const data = await res.json();
             const df = new Intl.DateTimeFormat('da-DK', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' });
             newsList.innerHTML = data.news.map(n => `
-                <div class="news-item">
-                    <a href="${n.link}" target="_blank" class="news-title">${n.title}</a>
-                    <span class="news-date">${df.format(new Date(n.providerPublishTime * 1000))}</span>
+                <div style="border-bottom:1px solid #eee; padding:10px 0;">
+                    <a href="${n.link}" target="_blank" style="text-decoration:none; color:var(--text); font-weight:bold;">${n.title}</a><br>
+                    <small style="color:gray">${df.format(new Date(n.providerPublishTime * 1000))}</small>
                 </div>
             `).join('');
         } catch (e) { newsList.innerHTML = "Fejl ved hentning af nyheder."; }
