@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Invest-Master Pro v3.0</title>
+    <title>Invest-Master Pro v4.0</title>
 
     <style>
         :root {
@@ -25,12 +25,10 @@
         .tab-content { display: none; }
         .tab-content.active { display: block; }
 
-        /* Sub-tabs for Allokering */
         .sub-tabs { display: flex; gap: 5px; margin-bottom: 15px; }
         .sub-btn { padding: 5px 12px; font-size: 13px; cursor: pointer; border-radius: 5px; border: 1px solid #ccc; background: white; }
         .sub-btn.active { background: #64748b; color: white; border-color: #64748b; }
 
-        /* UI Elements */
         .card { background: var(--card-bg); padding: 20px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); margin-bottom: 20px; }
         .cards-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px; margin-bottom: 20px; }
         input, select, button { padding: 10px; border-radius: 6px; border: 1px solid #ddd; font-size: 14px; }
@@ -55,8 +53,8 @@
 
 <div id="updateModal">
     <div class="modal-content">
-        <h2>✨ Nyhed: Multi-Allokering (v3.0)</h2>
-        <p>Du kan nu analysere din portefølje på 3 måder: efter Type (Aktie/ETF), Land og Sektor!</p>
+        <h2>✨ Nyhed: Valuta-omregning (v4.0)</h2>
+        <p>Du kan nu vælge valuta (USD/EUR) pr. aktie. Appen omregner automatisk alt til DKK!</p>
         <button onclick="closeModal()" style="width: 100%;">Kom i gang</button>
     </div>
 </div>
@@ -72,9 +70,9 @@
 
     <div id="dashboard" class="tab-content active">
         <div class="cards-grid">
-            <div class="card">Investeret<br><b id="invested">0 kr</b></div>
-            <div class="card">Værdi<br><b id="value">0 kr</b></div>
-            <div class="card">Afkast<br><b id="profit">0 kr</b></div>
+            <div class="card">Investeret (DKK)<br><b id="invested">0 kr</b></div>
+            <div class="card">Værdi (DKK)<br><b id="value">0 kr</b></div>
+            <div class="card">Afkast (DKK)<br><b id="profit">0 kr</b></div>
             <div class="card">Afkast %<br><b id="profitPct">0%</b></div>
         </div>
 
@@ -85,6 +83,11 @@
                 <input id="quantity" type="number" placeholder="Antal">
                 <input id="buyPrice" type="number" placeholder="Købspris">
                 <input id="currentPrice" type="number" placeholder="Nuv. pris">
+                <select id="currency">
+                    <option value="DKK">Valuta: DKK</option>
+                    <option value="USD">Valuta: USD</option>
+                    <option value="EUR">Valuta: EUR</option>
+                </select>
                 <select id="type">
                     <option value="Aktie">Aktie</option>
                     <option value="ETF">ETF</option>
@@ -108,12 +111,12 @@
 
         <div class="card">
             <div style="display:flex; justify-content:space-between; margin-bottom:10px">
-                <h2>Holdings</h2>
-                <button onclick="updateAllPrices()" id="updateBtn">🔄 Opdater priser</button>
+                <h2>Holdings (omregnet til DKK)</h2>
+                <button onclick="updateAll()" id="updateBtn">🔄 Opdater priser & kurser</button>
             </div>
             <table>
                 <thead>
-                    <tr><th>Aktiv</th><th>Type</th><th>Land</th><th>Værdi</th><th>Handling</th></tr>
+                    <tr><th>Aktiv</th><th>Valuta</th><th>Værdi (DKK)</th><th>Afkast (DKK)</th><th>Handling</th></tr>
                 </thead>
                 <tbody id="dashboardBody"></tbody>
             </table>
@@ -128,16 +131,9 @@
                 <button class="sub-btn" onclick="setAllocView('country', this)">2: Lande</button>
                 <button class="sub-btn" onclick="setAllocView('sector', this)">3: Sektorer</button>
             </div>
-            
-            <p id="allocDesc">Viser fordelingen af din portefølje baseret på aktivtype.</p>
-            
             <table>
                 <thead>
-                    <tr>
-                        <th id="allocHeader">Kategori</th>
-                        <th>Værdi</th>
-                        <th>Nuværende %</th>
-                    </tr>
+                    <tr><th id="allocHeader">Kategori</th><th>Værdi (DKK)</th><th>Nuværende %</th></tr>
                 </thead>
                 <tbody id="allocationBody"></tbody>
             </table>
@@ -153,8 +149,9 @@
 </div>
 
 <script>
-    const VERSION = "3.0";
+    const VERSION = "4.0";
     let investments = JSON.parse(localStorage.getItem("investments")) || [];
+    let fxRates = { USD: 7.0, EUR: 7.45, DKK: 1 }; // Standardkurser, opdateres live
     let currentAllocView = 'type'; 
     const fmt = new Intl.NumberFormat('da-DK', { style: 'currency', currency: 'DKK', maximumFractionDigits: 0 });
 
@@ -162,6 +159,7 @@
         if (localStorage.getItem("lastSeenVersion") !== VERSION) {
             document.getElementById("updateModal").style.display = "flex";
         }
+        updateFX(); // Hent friske valutakurser ved start
         render();
     };
 
@@ -177,17 +175,16 @@
         btn.classList.add('active');
     }
 
-    function setAllocView(view, btn) {
-        currentAllocView = view;
-        document.querySelectorAll('.sub-btn').forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-        
-        const labels = { type: 'Aktivtype', country: 'Land', sector: 'Sektor' };
-        document.getElementById('allocHeader').textContent = labels[view];
-        renderAllocation();
+    async function updateFX() {
+        try {
+            const res = await fetch(`https://corsproxy.io/?https://query1.finance.yahoo.com/v7/finance/quote?symbols=DKK=X,EURDKK=X`);
+            const data = await res.json();
+            // Yahoo bruger DKK=X (hvor mange DKK for 1 USD)
+            fxRates.USD = data.quoteResponse.result.find(r => r.symbol === "DKK=X").regularMarketPrice;
+            fxRates.EUR = data.quoteResponse.result.find(r => r.symbol === "EURDKK=X").regularMarketPrice;
+            console.log("Valutakurser opdateret:", fxRates);
+        } catch (e) { console.error("Kunne ikke hente FX kurser", e); }
     }
-
-    function save() { localStorage.setItem("investments", JSON.stringify(investments)); }
 
     function addInvestment() {
         const i = {
@@ -195,24 +192,20 @@
             quantity: parseFloat(document.getElementById("quantity").value),
             buyPrice: parseFloat(document.getElementById("buyPrice").value),
             currentPrice: parseFloat(document.getElementById("currentPrice").value),
+            currency: document.getElementById("currency").value,
             type: document.getElementById("type").value,
             country: document.getElementById("country").value,
-            sector: document.getElementById("sector").value,
-            targetPct: 0 // Kan udvides til at have targets per kategori
+            sector: document.getElementById("sector").value
         };
         if (!i.name || isNaN(i.quantity)) return;
         investments.push(i);
         save(); render();
     }
 
-    function deleteInvestment(index) {
-        investments.splice(index, 1);
-        save(); render();
-    }
-
-    async function updateAllPrices() {
+    async function updateAll() {
         const btn = document.getElementById("updateBtn");
-        btn.textContent = "Henter...";
+        btn.textContent = "Henter data...";
+        await updateFX();
         for (let i = 0; i < investments.length; i++) {
             try {
                 const res = await fetch(`https://corsproxy.io/?https://query1.finance.yahoo.com/v7/finance/quote?symbols=${investments[i].name}`);
@@ -221,72 +214,69 @@
             } catch (e) { console.error(e); }
         }
         save(); render();
-        btn.textContent = "🔄 Opdater priser";
+        btn.textContent = "🔄 Opdater priser & kurser";
     }
 
     function render() {
-        let totalInvested = 0, totalValue = 0;
+        let totalInvestedDKK = 0, totalValueDKK = 0;
+
         investments.forEach(i => {
-            totalInvested += i.quantity * i.buyPrice;
-            totalValue += i.quantity * i.currentPrice;
+            const rate = fxRates[i.currency] || 1;
+            totalInvestedDKK += (i.quantity * i.buyPrice) * rate;
+            totalValueDKK += (i.quantity * i.currentPrice) * rate;
         });
 
-        document.getElementById("invested").textContent = fmt.format(totalInvested);
-        document.getElementById("value").textContent = fmt.format(totalValue);
-        document.getElementById("profit").textContent = fmt.format(totalValue - totalInvested);
-        document.getElementById("profitPct").textContent = totalInvested ? ((totalValue - totalInvested)/totalInvested*100).toFixed(2) + "%" : "0%";
+        document.getElementById("invested").textContent = fmt.format(totalInvestedDKK);
+        document.getElementById("value").textContent = fmt.format(totalValueDKK);
+        document.getElementById("profit").textContent = fmt.format(totalValueDKK - totalInvestedDKK);
+        document.getElementById("profitPct").textContent = totalInvestedDKK ? ((totalValueDKK - totalInvestedDKK)/totalInvestedDKK*100).toFixed(2) + "%" : "0%";
 
         const dashBody = document.getElementById("dashboardBody");
-        dashBody.innerHTML = investments.map((i, idx) => `
-            <tr>
-                <td><b>${i.name}</b></td>
-                <td>${i.type}</td>
-                <td>${i.country}</td>
-                <td>${fmt.format(i.quantity * i.currentPrice)}</td>
-                <td><button onclick="deleteInvestment(${idx})" style="background:red">X</button></td>
-            </tr>
-        `).join('');
-        
-        if (document.getElementById('allocation').classList.contains('active')) renderAllocation();
-    }
-
-    function renderAllocation() {
-        let totalValue = investments.reduce((sum, i) => sum + (i.quantity * i.currentPrice), 0);
-        const groups = {};
-
-        // Gruppér data baseret på den valgte visning (type, country eller sector)
-        investments.forEach(i => {
-            const key = i[currentAllocView];
-            groups[key] = (groups[key] || 0) + (i.quantity * i.currentPrice);
-        });
-
-        const allocBody = document.getElementById("allocationBody");
-        allocBody.innerHTML = Object.keys(groups).map(key => {
-            const val = groups[key];
-            const pct = totalValue ? (val / totalValue * 100).toFixed(1) : 0;
+        dashBody.innerHTML = investments.map((i, idx) => {
+            const rate = fxRates[i.currency] || 1;
+            const valDKK = (i.quantity * i.currentPrice) * rate;
+            const buyDKK = (i.quantity * i.buyPrice) * rate;
             return `<tr>
-                <td><b>${key}</b></td>
-                <td>${fmt.format(val)}</td>
-                <td>${pct}%</td>
+                <td><b>${i.name}</b></td>
+                <td>${i.currency}</td>
+                <td>${fmt.format(valDKK)}</td>
+                <td class="${valDKK >= buyDKK ? 'positive' : 'negative'}">${fmt.format(valDKK - buyDKK)}</td>
+                <td><button onclick="deleteInvestment(${idx})" style="background:red">X</button></td>
             </tr>`;
         }).join('');
     }
 
+    function save() { localStorage.setItem("investments", JSON.stringify(investments)); }
+    function deleteInvestment(index) { investments.splice(index, 1); save(); render(); }
+    function setAllocView(view, btn) {
+        currentAllocView = view;
+        document.querySelectorAll('.sub-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        renderAllocation();
+    }
+
+    function renderAllocation() {
+        let totalValue = investments.reduce((sum, i) => sum + (i.quantity * i.currentPrice * (fxRates[i.currency]||1)), 0);
+        const groups = {};
+        investments.forEach(i => {
+            const key = i[currentAllocView];
+            groups[key] = (groups[key] || 0) + (i.quantity * i.currentPrice * (fxRates[i.currency]||1));
+        });
+        document.getElementById("allocationBody").innerHTML = Object.keys(groups).map(key => `
+            <tr><td><b>${key}</b></td><td>${fmt.format(groups[key])}</td><td>${((groups[key]/totalValue)*100).toFixed(1)}%</td></tr>
+        `).join('');
+    }
+
     async function loadNews() {
         const newsList = document.getElementById("newsList");
-        if (investments.length === 0) { newsList.innerHTML = "Ingen aktier fundet."; return; }
-        const tickers = investments.map(i => i.name).join(',');
+        if (investments.length === 0) return;
         try {
-            const res = await fetch(`https://corsproxy.io/?https://query1.finance.yahoo.com/v1/finance/search?q=${tickers}`);
+            const res = await fetch(`https://corsproxy.io/?https://query1.finance.yahoo.com/v1/finance/search?q=${investments.map(i=>i.name).join(',')}`);
             const data = await res.json();
-            const df = new Intl.DateTimeFormat('da-DK', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' });
             newsList.innerHTML = data.news.map(n => `
-                <div style="border-bottom:1px solid #eee; padding:10px 0;">
-                    <a href="${n.link}" target="_blank" style="text-decoration:none; color:var(--text); font-weight:bold;">${n.title}</a><br>
-                    <small style="color:gray">${df.format(new Date(n.providerPublishTime * 1000))}</small>
-                </div>
+                <div style="margin-bottom:10px"><a href="${n.link}" target="_blank" style="text-decoration:none; color:var(--text); font-weight:bold;">${n.title}</a></div>
             `).join('');
-        } catch (e) { newsList.innerHTML = "Fejl ved hentning af nyheder."; }
+        } catch (e) { newsList.innerHTML = "Fejl ved nyheder."; }
     }
 </script>
 
