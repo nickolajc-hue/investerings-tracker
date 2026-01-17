@@ -184,4 +184,40 @@
             }
         });
 
-        document.getElementById("formTitle").innerText = "📝 Ret aktie
+        document.getElementById("formTitle").innerText = "📝 Ret aktie: " + i.name;
+        document.getElementById("addBtn").innerText = "Opdater aktie";
+        document.getElementById("cancelBtn").style.display = "inline-block";
+        document.getElementById("inputCard").classList.add("edit-mode");
+    }
+
+    function resetForm() {
+        editingIndex = -1;
+        document.getElementById("formTitle").innerText = "➕ Tilføj/Ret Investering";
+        document.getElementById("addBtn").innerText = "Gem investering";
+        document.getElementById("cancelBtn").style.display = "none";
+        document.getElementById("inputCard").classList.remove("edit-mode");
+        ["name", "quantity", "buyPrice", "currentPrice"].forEach(id => document.getElementById(id).value = "");
+        buildModelDropdowns();
+    }
+
+    function render() {
+        const body = document.getElementById("dashboardBody");
+        body.innerHTML = investments.map((i, idx) => {
+            const tags = Object.entries(i.allocations || {}).map(([m, v]) => v ? `<span class="tag">${m}: ${v}</span>` : '').join('');
+            const valDKK = i.quantity * i.currentPrice * (fxRates[i.currency] || 1);
+            return `<tr>
+                <td><b>${i.name}</b></td>
+                <td>${tags}</td>
+                <td>${fmt.format(valDKK)}</td>
+                <td>
+                    <button onclick="editInvestment(${idx})" style="background:#f59e0b">Ret</button>
+                    <button onclick="investments.splice(${idx},1); saveToDisk(); render();" style="background:red">X</button>
+                </td>
+            </tr>`;
+        }).join('');
+    }
+
+    window.onload = () => { buildModelDropdowns(); render(); };
+</script>
+</body>
+</html>
