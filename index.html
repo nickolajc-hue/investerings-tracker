@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Invest-Master Pro v5.0</title>
+    <title>Invest-Master Pro v7.0</title>
 
     <style>
         :root {
@@ -19,7 +19,6 @@
         body { font-family: 'Segoe UI', sans-serif; background: var(--bg); padding: 20px; color: var(--text); }
         .container { max-width: 1100px; margin: auto; }
         
-        /* Tabs */
         .tabs { display: flex; gap: 10px; margin-bottom: 20px; border-bottom: 2px solid #ddd; padding-bottom: 10px; }
         .tab-btn { padding: 10px 20px; cursor: pointer; border-radius: 8px; border: none; background: #e2e8f0; font-weight: bold; }
         .tab-btn.active { background: var(--primary); color: white; }
@@ -39,22 +38,19 @@
         .positive { color: var(--success); font-weight: bold; }
         .negative { color: var(--danger); font-weight: bold; }
 
-        /* Nyheds-styling */
-        .news-item { border-bottom: 1px solid #eee; padding: 15px 0; position: relative; }
-        .unread-dot { color: var(--unread); font-size: 24px; line-height: 0; vertical-align: middle; margin-right: 8px; }
-        .news-link { text-decoration: none; color: var(--text); font-weight: bold; font-size: 16px; }
-        .news-link:visited { color: #64748b; }
-        .news-meta { font-size: 12px; color: #64748b; margin-top: 5px; }
-
-        /* Allokerings-input */
-        .alloc-input { width: 60px; text-align: center; }
+        .news-item { border-bottom: 1px solid #eee; padding: 15px 0; }
+        .unread-dot { color: var(--unread); font-size: 20px; margin-right: 5px; }
+        .edit-mode { background: #fef3c7 !important; border: 1px solid #f59e0b !important; }
+        
+        .action-buy { color: var(--success); font-size: 12px; display: block; }
+        .action-sell { color: var(--danger); font-size: 12px; display: block; }
     </style>
 </head>
 
 <body>
 
 <div class="container">
-    <h1>📊 Invest-Master Pro v5.0</h1>
+    <h1>📊 Invest-Master Pro v7.0</h1>
 
     <div class="tabs">
         <button class="tab-btn active" onclick="showTab('dashboard', this)">🏠 Dashboard</button>
@@ -70,10 +66,10 @@
             <div class="card">Afkast %<br><b id="profitPct">0%</b></div>
         </div>
 
-        <div class="card">
-            <h2>➕ Tilføj ny investering</h2>
+        <div class="card" id="inputCard">
+            <h2 id="formTitle">➕ Tilføj ny investering</h2>
             <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px;">
-                <input id="name" placeholder="Ticker (f.eks. AAPL)">
+                <input id="name" placeholder="Ticker (fx AAPL)">
                 <input id="quantity" type="number" placeholder="Antal">
                 <input id="buyPrice" type="number" placeholder="Købspris">
                 <input id="currentPrice" type="number" placeholder="Nuv. pris">
@@ -82,19 +78,22 @@
                     <option value="USD">USD</option>
                     <option value="EUR">EUR</option>
                 </select>
-                <input id="subGroup" placeholder="Under-emne (fx Crowdlending)">
+                <select id="subGroupDropdown"></select>
             </div>
-            <button onclick="addInvestment()" style="margin-top: 15px; width: 100%;">Tilføj til portefølje</button>
+            <div style="margin-top: 15px; display: flex; gap: 10px;">
+                <button id="addBtn" onclick="addInvestment()" style="flex: 2;">Gem investering</button>
+                <button id="cancelBtn" onclick="resetForm()" style="flex: 1; background: #64748b; display: none;">Annuller</button>
+            </div>
         </div>
 
         <div class="card">
             <div style="display:flex; justify-content:space-between; margin-bottom:10px">
-                <h2>Holdings</h2>
+                <h2>Portefølje</h2>
                 <button onclick="updateAll()" id="updateBtn">🔄 Opdater live data</button>
             </div>
-            <table id="mainTable">
+            <table>
                 <thead>
-                    <tr><th>Aktiv</th><th>Under-emne</th><th>Værdi (DKK)</th><th>Handling</th></tr>
+                    <tr><th>Aktiv</th><th>Kategori</th><th>Værdi (DKK)</th><th>Handling</th></tr>
                 </thead>
                 <tbody id="dashboardBody"></tbody>
             </table>
@@ -103,22 +102,22 @@
 
     <div id="allocation" class="tab-content">
         <div class="card">
-            <h2>⚙️ Definer din Mål-Allokering</h2>
-            <p><small>Indtast dine kategorier og mål-procenter herunder.</small></p>
-            <table id="allocSettingsTable">
+            <h2>⚙️ Styring af Kategorier</h2>
+            <table>
                 <thead>
-                    <tr><th>Kategori / Under-emne</th><th>Mål %</th><th>Handling</th></tr>
+                    <tr><th>Navn</th><th>Mål %</th><th>Handling</th></tr>
                 </thead>
                 <tbody id="allocSettingsBody"></tbody>
             </table>
-            <button onclick="addAllocCategory()" style="margin-top: 10px; background: var(--success);">+ Tilføj kategori</button>
+            <button onclick="addAllocCategory()" style="margin-top: 10px; background: var(--success);">+ Tilføj emne</button>
         </div>
 
         <div class="card">
-            <h2>📊 Status vs. Mål</h2>
-            <table id="allocStatusTable">
+            <h2>⚖️ Rebalancering (Handelsplan)</h2>
+            <p><small>Herunder ser du, hvor meget du skal købe eller sælge for at ramme dine mål.</small></p>
+            <table>
                 <thead>
-                    <tr><th>Kategori</th><th>Nuværende (DKK)</th><th>Nuv %</th><th>Mål %</th><th>Difference</th></tr>
+                    <tr><th>Kategori</th><th>Værdi (DKK)</th><th>Nuv %</th><th>Mål %</th><th>Handling påkrævet</th></tr>
                 </thead>
                 <tbody id="allocStatusBody"></tbody>
             </table>
@@ -142,21 +141,27 @@
     ];
     let readNews = JSON.parse(localStorage.getItem("readNews")) || [];
     let fxRates = { USD: 7.0, EUR: 7.45, DKK: 1 };
+    let editingIndex = -1;
+
     const fmt = new Intl.NumberFormat('da-DK', { style: 'currency', currency: 'DKK', maximumFractionDigits: 0 });
 
-    // NAVIGATION
     function showTab(tabId, btn) {
         document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
         document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
         document.getElementById(tabId).classList.add('active');
         btn.classList.add('active');
+        updateDropdowns();
     }
 
-    // INVESTERINGSLOGIK
     function save() { 
         localStorage.setItem("investments", JSON.stringify(investments));
         localStorage.setItem("allocGoals", JSON.stringify(allocGoals));
         localStorage.setItem("readNews", JSON.stringify(readNews));
+    }
+
+    function updateDropdowns() {
+        const select = document.getElementById("subGroupDropdown");
+        select.innerHTML = allocGoals.map(g => `<option value="${g.name}">${g.name}</option>`).join('');
     }
 
     function addInvestment() {
@@ -166,40 +171,41 @@
             buyPrice: parseFloat(document.getElementById("buyPrice").value),
             currentPrice: parseFloat(document.getElementById("currentPrice").value),
             currency: document.getElementById("currency").value,
-            subGroup: document.getElementById("subGroup").value || "Andet"
+            subGroup: document.getElementById("subGroupDropdown").value
         };
         if (!i.name || isNaN(i.quantity)) return;
-        investments.push(i);
-        save(); render();
+        if (editingIndex > -1) { investments[editingIndex] = i; editingIndex = -1; } 
+        else { investments.push(i); }
+        save(); resetForm(); render();
     }
 
-    function deleteInvestment(index) { investments.splice(index, 1); save(); render(); }
-
-    // ALLOKERINGSLOGIK
-    function addAllocCategory() {
-        allocGoals.push({ name: "Ny kategori", pct: 0 });
-        renderAllocation();
+    function editInvestment(index) {
+        const i = investments[index];
+        editingIndex = index;
+        document.getElementById("name").value = i.name;
+        document.getElementById("quantity").value = i.quantity;
+        document.getElementById("buyPrice").value = i.buyPrice;
+        document.getElementById("currentPrice").value = i.currentPrice;
+        document.getElementById("currency").value = i.currency;
+        document.getElementById("subGroupDropdown").value = i.subGroup;
+        document.getElementById("formTitle").textContent = "📝 Ret: " + i.name;
+        document.getElementById("addBtn").textContent = "Opdater";
+        document.getElementById("cancelBtn").style.display = "inline-block";
+        document.getElementById("inputCard").classList.add("edit-mode");
+        window.scrollTo(0,0);
     }
 
-    function updateGoalPct(index, val) {
-        allocGoals[index].pct = parseFloat(val) || 0;
-        save();
-        renderAllocation();
+    function resetForm() {
+        editingIndex = -1;
+        document.getElementById("formTitle").textContent = "➕ Tilføj ny investering";
+        document.getElementById("addBtn").textContent = "Gem investering";
+        document.getElementById("cancelBtn").style.display = "none";
+        document.getElementById("inputCard").classList.remove("edit-mode");
+        ["name", "quantity", "buyPrice", "currentPrice"].forEach(id => document.getElementById(id).value = "");
     }
 
-    function updateGoalName(index, val) {
-        allocGoals[index].name = val;
-        save();
-    }
-
-    function deleteAllocGoal(index) {
-        allocGoals.splice(index, 1);
-        save();
-        renderAllocation();
-    }
-
-    // RENDERING
     function render() {
+        updateDropdowns();
         let totalInvestedDKK = 0, totalValueDKK = 0;
         investments.forEach(i => {
             const rate = fxRates[i.currency] || 1;
@@ -215,104 +221,91 @@
         const dashBody = document.getElementById("dashboardBody");
         dashBody.innerHTML = investments.map((i, idx) => {
             const valDKK = (i.quantity * i.currentPrice) * (fxRates[i.currency] || 1);
-            return `<tr><td><b>${i.name}</b></td><td>${i.subGroup}</td><td>${fmt.format(valDKK)}</td><td><button onclick="deleteInvestment(${idx})" style="background:red">X</button></td></tr>`;
+            return `<tr><td><b>${i.name}</b></td><td>${i.subGroup}</td><td>${fmt.format(valDKK)}</td><td><button onclick="editInvestment(${idx})" style="background:#f59e0b">Ret</button> <button onclick="deleteInvestment(${idx})" style="background:red">X</button></td></tr>`;
         }).join('');
     }
 
+    function addAllocCategory() {
+        allocGoals.push({ name: "Nyt emne", pct: 0 });
+        renderAllocation();
+    }
+
     function renderAllocation() {
-        // Render Indstillinger
         const settingsBody = document.getElementById("allocSettingsBody");
         settingsBody.innerHTML = allocGoals.map((g, idx) => `
             <tr>
-                <td><input value="${g.name}" onchange="updateGoalName(${idx}, this.value)" style="width:150px"></td>
-                <td><input type="number" value="${g.pct}" onchange="updateGoalPct(${idx}, this.value)" class="alloc-input"> %</td>
-                <td><button onclick="deleteAllocGoal(${idx})" style="background:red">X</button></td>
+                <td><input value="${g.name}" onchange="allocGoals[${idx}].name=this.value; save(); updateDropdowns();" style="width:100%"></td>
+                <td><input type="number" value="${g.pct}" onchange="allocGoals[${idx}].pct=parseFloat(this.value); save(); renderAllocation();" style="width:60px"> %</td>
+                <td><button onclick="allocGoals.splice(${idx},1); save(); renderAllocation();" style="background:red">X</button></td>
             </tr>
         `).join('');
 
-        // Render Status
         let totalValue = investments.reduce((sum, i) => sum + (i.quantity * i.currentPrice * (fxRates[i.currency]||1)), 0);
         const statusBody = document.getElementById("allocStatusBody");
         
         statusBody.innerHTML = allocGoals.map(g => {
-            // Find alle investeringer der matcher denne kategori (fx hvis subGroup indeholder navnet)
-            const catValue = investments.filter(i => i.subGroup.toLowerCase().includes(g.name.toLowerCase()))
-                                        .reduce((sum, i) => sum + (i.quantity * i.currentPrice * (fxRates[i.currency]||1)), 0);
+            const catVal = investments.filter(i => i.subGroup === g.name).reduce((sum, i) => sum + (i.quantity * i.currentPrice * (fxRates[i.currency]||1)), 0);
+            const curPct = totalValue ? (catVal / totalValue * 100) : 0;
             
-            const curPct = totalValue ? (catValue / totalValue * 100) : 0;
-            const diffPct = curPct - g.pct;
+            // Beregn rebalancering i DKK
+            const targetVal = totalValue * (g.pct / 100);
+            const tradeAmt = targetVal - catVal;
+
+            let actionHtml = tradeAmt > 0 
+                ? `<span class="action-buy">Køb for ${fmt.format(tradeAmt)}</span>` 
+                : `<span class="action-sell">Sælg for ${fmt.format(Math.abs(tradeAmt))}</span>`;
+            
+            if (Math.abs(tradeAmt) < 50) actionHtml = "I balance";
 
             return `<tr>
                 <td><b>${g.name}</b></td>
-                <td>${fmt.format(catValue)}</td>
+                <td>${fmt.format(catVal)}</td>
                 <td>${curPct.toFixed(1)}%</td>
                 <td>${g.pct}%</td>
-                <td class="${Math.abs(diffPct) < 2 ? '' : (diffPct > 0 ? 'negative' : 'positive')}">
-                    ${diffPct > 0 ? '+' : ''}${diffPct.toFixed(1)}%
-                </td>
+                <td>${actionHtml}</td>
             </tr>`;
         }).join('');
     }
 
-    // NYHEDER MED BLUE DOT
     async function loadNews() {
-        const newsList = document.getElementById("newsList");
-        if (investments.length === 0) return;
-        
+        const list = document.getElementById("newsList");
+        if (!investments.length) return list.innerHTML = "Ingen aktier fundet.";
         try {
             const res = await fetch(`https://corsproxy.io/?https://query1.finance.yahoo.com/v1/finance/search?q=${investments.map(i=>i.name).join(',')}`);
             const data = await res.json();
             const df = new Intl.DateTimeFormat('da-DK', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' });
-            
-            newsList.innerHTML = data.news.map(n => {
-                const isUnread = !readNews.includes(n.uuid);
-                const pubDate = new Date(n.providerPublishTime * 1000);
-
-                return `
-                    <div class="news-item">
-                        ${isUnread ? '<span class="unread-dot">•</span>' : ''}
-                        <a href="${n.link}" target="_blank" class="news-link" onclick="markAsRead('${n.uuid}')">
-                            ${n.title}
-                        </a>
-                        <div class="news-meta">
-                            📅 ${df.format(pubDate)} | Kilde: ${n.publisher}
-                        </div>
-                    </div>
-                `;
-            }).join('');
-        } catch (e) { newsList.innerHTML = "Kunne ikke hente nyheder."; }
+            list.innerHTML = data.news.map(n => `
+                <div class="news-item">
+                    ${!readNews.includes(n.uuid) ? '<span class="unread-dot">•</span>' : ''}
+                    <a href="${n.link}" target="_blank" onclick="if(!readNews.includes('${n.uuid}')){readNews.push('${n.uuid}');save();}" style="text-decoration:none; color:var(--text); font-weight:bold;">${n.title}</a>
+                    <div style="font-size:12px; color:gray; margin-top:5px;">📅 ${df.format(new Date(n.providerPublishTime * 1000))} | ${n.publisher}</div>
+                </div>
+            `).join('');
+        } catch (e) { list.innerHTML = "Fejl ved nyheder."; }
     }
 
-    function markAsRead(uuid) {
-        if (!readNews.includes(uuid)) {
-            readNews.push(uuid);
-            save();
-            // Vi re-renderer ikke med det samme for ikke at forstyrre klikket, 
-            // men prikken vil være væk næste gang fanen åbnes.
-        }
-    }
-
-    // LIVE OPDATERING
     async function updateAll() {
         const btn = document.getElementById("updateBtn");
         btn.textContent = "Opdaterer...";
-        // Hent Valuta
-        const fxRes = await fetch(`https://corsproxy.io/?https://query1.finance.yahoo.com/v7/finance/quote?symbols=DKK=X,EURDKK=X`);
-        const fxData = await fxRes.json();
-        fxRates.USD = fxData.quoteResponse.result.find(r => r.symbol === "DKK=X").regularMarketPrice;
-        fxRates.EUR = fxData.quoteResponse.result.find(r => r.symbol === "EURDKK=X").regularMarketPrice;
+        try {
+            const fxRes = await fetch(`https://corsproxy.io/?https://query1.finance.yahoo.com/v7/finance/quote?symbols=DKK=X,EURDKK=X`);
+            const fxData = await fxRes.json();
+            fxRates.USD = fxData.quoteResponse.result.find(r => r.symbol === "DKK=X").regularMarketPrice;
+            fxRates.EUR = fxData.quoteResponse.result.find(r => r.symbol === "EURDKK=X").regularMarketPrice;
 
-        // Hent Aktier
-        for (let i = 0; i < investments.length; i++) {
-            const res = await fetch(`https://corsproxy.io/?https://query1.finance.yahoo.com/v7/finance/quote?symbols=${investments[i].name}`);
-            const d = await res.json();
-            if (d.quoteResponse.result[0]) investments[i].currentPrice = d.quoteResponse.result[0].regularMarketPrice;
-        }
+            for (let i = 0; i < investments.length; i++) {
+                const res = await fetch(`https://corsproxy.io/?https://query1.finance.yahoo.com/v7/finance/quote?symbols=${investments[i].name}`);
+                const d = await res.json();
+                if (d.quoteResponse.result[0]) investments[i].currentPrice = d.quoteResponse.result[0].regularMarketPrice;
+            }
+        } catch(e) {}
         save(); render();
         btn.textContent = "🔄 Opdater live data";
     }
 
-    render();
+    function deleteInvestment(index) { if(confirm("Slet aktie?")) { investments.splice(index, 1); save(); render(); } }
+
+    window.onload = () => { render(); updateDropdowns(); };
 </script>
 
 </body>
