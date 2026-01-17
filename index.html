@@ -3,54 +3,36 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Invest-Master Pro v7.0</title>
-
+    <title>Invest-Master Pro v8.0</title>
     <style>
-        :root {
-            --primary: #2563eb;
-            --success: #16a34a;
-            --danger: #dc2626;
-            --bg: #f0f2f5;
-            --card-bg: #ffffff;
-            --text: #1e293b;
-            --unread: #3b82f6;
-        }
-
+        :root { --primary: #2563eb; --success: #16a34a; --danger: #dc2626; --bg: #f0f2f5; --card-bg: #ffffff; --text: #1e293b; --unread: #3b82f6; }
         body { font-family: 'Segoe UI', sans-serif; background: var(--bg); padding: 20px; color: var(--text); }
         .container { max-width: 1100px; margin: auto; }
-        
         .tabs { display: flex; gap: 10px; margin-bottom: 20px; border-bottom: 2px solid #ddd; padding-bottom: 10px; }
         .tab-btn { padding: 10px 20px; cursor: pointer; border-radius: 8px; border: none; background: #e2e8f0; font-weight: bold; }
         .tab-btn.active { background: var(--primary); color: white; }
         .tab-content { display: none; }
         .tab-content.active { display: block; }
-
         .card { background: var(--card-bg); padding: 20px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); margin-bottom: 20px; }
         .cards-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px; margin-bottom: 20px; }
-        
         input, select, button { padding: 10px; border-radius: 6px; border: 1px solid #ddd; font-size: 14px; }
         button { background: var(--primary); color: white; border: none; cursor: pointer; font-weight: bold; }
-        
-        table { width: 100%; border-collapse: collapse; }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
         th, td { padding: 12px; border-bottom: 1px solid #eee; text-align: right; }
         th:first-child, td:first-child { text-align: left; }
-        
         .positive { color: var(--success); font-weight: bold; }
         .negative { color: var(--danger); font-weight: bold; }
-
         .news-item { border-bottom: 1px solid #eee; padding: 15px 0; }
         .unread-dot { color: var(--unread); font-size: 20px; margin-right: 5px; }
+        .sub-row { background: #f8fafc; font-size: 0.9em; }
         .edit-mode { background: #fef3c7 !important; border: 1px solid #f59e0b !important; }
-        
-        .action-buy { color: var(--success); font-size: 12px; display: block; }
-        .action-sell { color: var(--danger); font-size: 12px; display: block; }
     </style>
 </head>
-
 <body>
 
 <div class="container">
-    <h1>📊 Invest-Master Pro v7.0</h1>
+    <h1>📊 Invest-Master Pro v8.0</h1>
+    <p><small>Ansvarsfraskrivelse: Dette værktøj er kun til informationsbrug og udgør ikke finansiel rådgivning.</small></p>
 
     <div class="tabs">
         <button class="tab-btn active" onclick="showTab('dashboard', this)">🏠 Dashboard</button>
@@ -73,12 +55,9 @@
                 <input id="quantity" type="number" placeholder="Antal">
                 <input id="buyPrice" type="number" placeholder="Købspris">
                 <input id="currentPrice" type="number" placeholder="Nuv. pris">
-                <select id="currency">
-                    <option value="DKK">DKK</option>
-                    <option value="USD">USD</option>
-                    <option value="EUR">EUR</option>
-                </select>
-                <select id="subGroupDropdown"></select>
+                <select id="currency"><option value="DKK">DKK</option><option value="USD">USD</option><option value="EUR">EUR</option></select>
+                <select id="mainGroupSelect" onchange="updateSubDropdown()"></select>
+                <select id="subGroupSelect"></select>
             </div>
             <div style="margin-top: 15px; display: flex; gap: 10px;">
                 <button id="addBtn" onclick="addInvestment()" style="flex: 2;">Gem investering</button>
@@ -92,9 +71,7 @@
                 <button onclick="updateAll()" id="updateBtn">🔄 Opdater live data</button>
             </div>
             <table>
-                <thead>
-                    <tr><th>Aktiv</th><th>Kategori</th><th>Værdi (DKK)</th><th>Handling</th></tr>
-                </thead>
+                <thead><tr><th>Aktiv</th><th>Over / Under-emne</th><th>Værdi (DKK)</th><th>Handling</th></tr></thead>
                 <tbody id="dashboardBody"></tbody>
             </table>
         </div>
@@ -102,66 +79,124 @@
 
     <div id="allocation" class="tab-content">
         <div class="card">
-            <h2>⚙️ Styring af Kategorier</h2>
-            <table>
-                <thead>
-                    <tr><th>Navn</th><th>Mål %</th><th>Handling</th></tr>
-                </thead>
-                <tbody id="allocSettingsBody"></tbody>
-            </table>
-            <button onclick="addAllocCategory()" style="margin-top: 10px; background: var(--success);">+ Tilføj emne</button>
+            <h2>⚙️ Struktur: Emner & Under-emner</h2>
+            <div id="allocEditor"></div>
+            <button onclick="addMainCategory()" style="margin-top: 15px; background: var(--success);">+ Tilføj nyt over-emne</button>
         </div>
 
         <div class="card">
             <h2>⚖️ Rebalancering (Handelsplan)</h2>
-            <p><small>Herunder ser du, hvor meget du skal købe eller sælge for at ramme dine mål.</small></p>
             <table>
-                <thead>
-                    <tr><th>Kategori</th><th>Værdi (DKK)</th><th>Nuv %</th><th>Mål %</th><th>Handling påkrævet</th></tr>
-                </thead>
+                <thead><tr><th>Emne</th><th>Værdi (DKK)</th><th>Nuv %</th><th>Mål %</th><th>Handling</th></tr></thead>
                 <tbody id="allocStatusBody"></tbody>
             </table>
         </div>
     </div>
 
     <div id="news" class="tab-content">
-        <div class="card">
-            <h2>📰 Seneste nyt</h2>
-            <div id="newsList">Henter nyheder...</div>
-        </div>
+        <div class="card"><h2>📰 Nyheder</h2><div id="newsList">Henter nyheder...</div></div>
     </div>
 </div>
 
 <script>
     let investments = JSON.parse(localStorage.getItem("investments")) || [];
-    let allocGoals = JSON.parse(localStorage.getItem("allocGoals")) || [
-        { name: "ETF", pct: 50 },
-        { name: "Udbytte", pct: 40 },
-        { name: "Krypto", pct: 10 }
+    let hierarchy = JSON.parse(localStorage.getItem("hierarchy")) || [
+        { name: "ETF", sub: [{ name: "Global", pct: 50 }] },
+        { name: "Udbytte", sub: [{ name: "eToro", pct: 20 }, { name: "Crowdlending", pct: 20 }] },
+        { name: "Krypto", sub: [{ name: "Bitcoin", pct: 10 }] }
     ];
     let readNews = JSON.parse(localStorage.getItem("readNews")) || [];
     let fxRates = { USD: 7.0, EUR: 7.45, DKK: 1 };
     let editingIndex = -1;
-
     const fmt = new Intl.NumberFormat('da-DK', { style: 'currency', currency: 'DKK', maximumFractionDigits: 0 });
 
-    function showTab(tabId, btn) {
-        document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-        document.getElementById(tabId).classList.add('active');
-        btn.classList.add('active');
-        updateDropdowns();
-    }
-
-    function save() { 
+    function save() {
         localStorage.setItem("investments", JSON.stringify(investments));
-        localStorage.setItem("allocGoals", JSON.stringify(allocGoals));
+        localStorage.setItem("hierarchy", JSON.stringify(hierarchy));
         localStorage.setItem("readNews", JSON.stringify(readNews));
     }
 
-    function updateDropdowns() {
-        const select = document.getElementById("subGroupDropdown");
-        select.innerHTML = allocGoals.map(g => `<option value="${g.name}">${g.name}</option>`).join('');
+    function showTab(id, btn) {
+        document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        document.getElementById(id).classList.add('active');
+        btn.classList.add('active');
+        updateMainDropdown();
+    }
+
+    // --- ALLOKERING EDITOR ---
+    function addMainCategory() {
+        hierarchy.push({ name: "Nyt emne", sub: [{ name: "Standard", pct: 0 }] });
+        renderAllocation();
+    }
+
+    function addSubCategory(mainIdx) {
+        hierarchy[mainIdx].sub.push({ name: "Nyt under-emne", pct: 0 });
+        renderAllocation();
+    }
+
+    function renderAllocation() {
+        const editor = document.getElementById("allocEditor");
+        editor.innerHTML = hierarchy.map((main, mIdx) => `
+            <div style="border: 1px solid #ddd; padding: 15px; border-radius: 8px; margin-bottom: 10px;">
+                <div style="display:flex; gap:10px; margin-bottom:10px;">
+                    <input value="${main.name}" onchange="hierarchy[${mIdx}].name=this.value; save(); updateMainDropdown();" style="font-weight:bold; flex:1">
+                    <button onclick="hierarchy.splice(${mIdx},1); save(); renderAllocation();" style="background:red">Slet Emne</button>
+                </div>
+                <div style="margin-left: 20px;">
+                    ${main.sub.map((s, sIdx) => `
+                        <div style="display:flex; gap:10px; margin-bottom:5px;">
+                            <input value="${s.name}" onchange="hierarchy[${mIdx}].sub[${sIdx}].name=this.value; save();" style="flex:2">
+                            <input type="number" value="${s.pct}" onchange="hierarchy[${mIdx}].sub[${sIdx}].pct=parseFloat(this.value); save(); renderAllocation();" style="width:60px"> %
+                            <button onclick="hierarchy[${mIdx}].sub.splice(${sIdx},1); save(); renderAllocation();" style="background:gray; padding:5px">X</button>
+                        </div>
+                    `).join('')}
+                    <button onclick="addSubCategory(${mIdx})" style="background:var(--success); font-size:12px; margin-top:5px;">+ Under-emne</button>
+                </div>
+            </div>
+        `).join('');
+
+        // Status / Rebalancering
+        let totalVal = investments.reduce((sum, i) => sum + (i.quantity * i.currentPrice * (fxRates[i.currency]||1)), 0);
+        const statusBody = document.getElementById("allocStatusBody");
+        let html = "";
+        
+        hierarchy.forEach(main => {
+            main.sub.forEach(sub => {
+                const val = investments.filter(i => i.mainGroup === main.name && i.subGroup === sub.name)
+                                      .reduce((sum, i) => sum + (i.quantity * i.currentPrice * (fxRates[i.currency]||1)), 0);
+                const curPct = totalVal ? (val / totalVal * 100) : 0;
+                const targetVal = totalVal * (sub.pct / 100);
+                const diff = targetVal - val;
+                
+                html += `<tr>
+                    <td><b>${main.name}</b> > ${sub.name}</td>
+                    <td>${fmt.format(val)}</td>
+                    <td>${curPct.toFixed(1)}%</td>
+                    <td>${sub.pct}%</td>
+                    <td class="${Math.abs(diff) < 50 ? '' : (diff > 0 ? 'positive' : 'negative')}">
+                        ${Math.abs(diff) < 50 ? 'Balance' : (diff > 0 ? 'Køb ' : 'Sælg ') + fmt.format(Math.abs(diff))}
+                    </td>
+                </tr>`;
+            });
+        });
+        statusBody.innerHTML = html;
+    }
+
+    // --- DASHBOARD ---
+    function updateMainDropdown() {
+        const sel = document.getElementById("mainGroupSelect");
+        sel.innerHTML = hierarchy.map(m => `<option value="${m.name}">${m.name}</option>`).join('');
+        updateSubDropdown();
+    }
+
+    function updateSubDropdown() {
+        const mainName = document.getElementById("mainGroupSelect").value;
+        const main = hierarchy.find(m => m.name === mainName);
+        const sel = document.getElementById("subGroupSelect");
+        if (main) {
+            sel.innerHTML = main.sub.map(s => `<option value="${s.name}">${s.name}</option>`).join('');
+        }
     }
 
     function addInvestment() {
@@ -171,23 +206,26 @@
             buyPrice: parseFloat(document.getElementById("buyPrice").value),
             currentPrice: parseFloat(document.getElementById("currentPrice").value),
             currency: document.getElementById("currency").value,
-            subGroup: document.getElementById("subGroupDropdown").value
+            mainGroup: document.getElementById("mainGroupSelect").value,
+            subGroup: document.getElementById("subGroupSelect").value
         };
         if (!i.name || isNaN(i.quantity)) return;
-        if (editingIndex > -1) { investments[editingIndex] = i; editingIndex = -1; } 
-        else { investments.push(i); }
+        if (editingIndex > -1) investments[editingIndex] = i;
+        else investments.push(i);
         save(); resetForm(); render();
     }
 
-    function editInvestment(index) {
-        const i = investments[index];
-        editingIndex = index;
+    function editInvestment(idx) {
+        const i = investments[idx];
+        editingIndex = idx;
         document.getElementById("name").value = i.name;
         document.getElementById("quantity").value = i.quantity;
         document.getElementById("buyPrice").value = i.buyPrice;
         document.getElementById("currentPrice").value = i.currentPrice;
         document.getElementById("currency").value = i.currency;
-        document.getElementById("subGroupDropdown").value = i.subGroup;
+        document.getElementById("mainGroupSelect").value = i.mainGroup;
+        updateSubDropdown();
+        document.getElementById("subGroupSelect").value = i.subGroup;
         document.getElementById("formTitle").textContent = "📝 Ret: " + i.name;
         document.getElementById("addBtn").textContent = "Opdater";
         document.getElementById("cancelBtn").style.display = "inline-block";
@@ -205,71 +243,52 @@
     }
 
     function render() {
-        updateDropdowns();
-        let totalInvestedDKK = 0, totalValueDKK = 0;
+        let tBuy = 0, tVal = 0;
         investments.forEach(i => {
-            const rate = fxRates[i.currency] || 1;
-            totalInvestedDKK += (i.quantity * i.buyPrice) * rate;
-            totalValueDKK += (i.quantity * i.currentPrice) * rate;
+            const r = fxRates[i.currency] || 1;
+            tBuy += (i.quantity * i.buyPrice) * r;
+            tVal += (i.quantity * i.currentPrice) * r;
         });
+        document.getElementById("invested").textContent = fmt.format(tBuy);
+        document.getElementById("value").textContent = fmt.format(tVal);
+        document.getElementById("profit").textContent = fmt.format(tVal - tBuy);
+        document.getElementById("profitPct").textContent = tBuy ? ((tVal-tBuy)/tBuy*100).toFixed(2) + "%" : "0%";
 
-        document.getElementById("invested").textContent = fmt.format(totalInvestedDKK);
-        document.getElementById("value").textContent = fmt.format(totalValueDKK);
-        document.getElementById("profit").textContent = fmt.format(totalValueDKK - totalInvestedDKK);
-        document.getElementById("profitPct").textContent = totalInvestedDKK ? ((totalValueDKK - totalInvestedDKK)/totalInvestedDKK*100).toFixed(2) + "%" : "0%";
-
-        const dashBody = document.getElementById("dashboardBody");
-        dashBody.innerHTML = investments.map((i, idx) => {
-            const valDKK = (i.quantity * i.currentPrice) * (fxRates[i.currency] || 1);
-            return `<tr><td><b>${i.name}</b></td><td>${i.subGroup}</td><td>${fmt.format(valDKK)}</td><td><button onclick="editInvestment(${idx})" style="background:#f59e0b">Ret</button> <button onclick="deleteInvestment(${idx})" style="background:red">X</button></td></tr>`;
-        }).join('');
-    }
-
-    function addAllocCategory() {
-        allocGoals.push({ name: "Nyt emne", pct: 0 });
-        renderAllocation();
-    }
-
-    function renderAllocation() {
-        const settingsBody = document.getElementById("allocSettingsBody");
-        settingsBody.innerHTML = allocGoals.map((g, idx) => `
+        const body = document.getElementById("dashboardBody");
+        body.innerHTML = investments.map((i, idx) => `
             <tr>
-                <td><input value="${g.name}" onchange="allocGoals[${idx}].name=this.value; save(); updateDropdowns();" style="width:100%"></td>
-                <td><input type="number" value="${g.pct}" onchange="allocGoals[${idx}].pct=parseFloat(this.value); save(); renderAllocation();" style="width:60px"> %</td>
-                <td><button onclick="allocGoals.splice(${idx},1); save(); renderAllocation();" style="background:red">X</button></td>
+                <td><b>${i.name}</b></td>
+                <td><small>${i.mainGroup} > ${i.subGroup}</small></td>
+                <td>${fmt.format(i.quantity * i.currentPrice * (fxRates[i.currency]||1))}</td>
+                <td>
+                    <button onclick="editInvestment(${idx})" style="background:#f59e0b">Ret</button>
+                    <button onclick="if(confirm('Slet?')){investments.splice(${idx},1);save();render();}" style="background:red">X</button>
+                </td>
             </tr>
         `).join('');
+    }
 
-        let totalValue = investments.reduce((sum, i) => sum + (i.quantity * i.currentPrice * (fxRates[i.currency]||1)), 0);
-        const statusBody = document.getElementById("allocStatusBody");
-        
-        statusBody.innerHTML = allocGoals.map(g => {
-            const catVal = investments.filter(i => i.subGroup === g.name).reduce((sum, i) => sum + (i.quantity * i.currentPrice * (fxRates[i.currency]||1)), 0);
-            const curPct = totalValue ? (catVal / totalValue * 100) : 0;
-            
-            // Beregn rebalancering i DKK
-            const targetVal = totalValue * (g.pct / 100);
-            const tradeAmt = targetVal - catVal;
-
-            let actionHtml = tradeAmt > 0 
-                ? `<span class="action-buy">Køb for ${fmt.format(tradeAmt)}</span>` 
-                : `<span class="action-sell">Sælg for ${fmt.format(Math.abs(tradeAmt))}</span>`;
-            
-            if (Math.abs(tradeAmt) < 50) actionHtml = "I balance";
-
-            return `<tr>
-                <td><b>${g.name}</b></td>
-                <td>${fmt.format(catVal)}</td>
-                <td>${curPct.toFixed(1)}%</td>
-                <td>${g.pct}%</td>
-                <td>${actionHtml}</td>
-            </tr>`;
-        }).join('');
+    async function updateAll() {
+        const btn = document.getElementById("updateBtn");
+        btn.textContent = "Henter data...";
+        try {
+            const fxRes = await fetch(`https://corsproxy.io/?https://query1.finance.yahoo.com/v7/finance/quote?symbols=DKK=X,EURDKK=X`);
+            const fxData = await fxRes.json();
+            fxRates.USD = fxData.quoteResponse.result.find(r => r.symbol === "DKK=X").regularMarketPrice;
+            fxRates.EUR = fxData.quoteResponse.result.find(r => r.symbol === "EURDKK=X").regularMarketPrice;
+            for (let i = 0; i < investments.length; i++) {
+                const res = await fetch(`https://corsproxy.io/?https://query1.finance.yahoo.com/v7/finance/quote?symbols=${investments[i].name}`);
+                const d = await res.json();
+                if (d.quoteResponse.result[0]) investments[i].currentPrice = d.quoteResponse.result[0].regularMarketPrice;
+            }
+        } catch(e) {}
+        save(); render();
+        btn.textContent = "🔄 Opdater live data";
     }
 
     async function loadNews() {
         const list = document.getElementById("newsList");
-        if (!investments.length) return list.innerHTML = "Ingen aktier fundet.";
+        if (!investments.length) return list.innerHTML = "Tilføj aktier først.";
         try {
             const res = await fetch(`https://corsproxy.io/?https://query1.finance.yahoo.com/v1/finance/search?q=${investments.map(i=>i.name).join(',')}`);
             const data = await res.json();
@@ -284,29 +303,7 @@
         } catch (e) { list.innerHTML = "Fejl ved nyheder."; }
     }
 
-    async function updateAll() {
-        const btn = document.getElementById("updateBtn");
-        btn.textContent = "Opdaterer...";
-        try {
-            const fxRes = await fetch(`https://corsproxy.io/?https://query1.finance.yahoo.com/v7/finance/quote?symbols=DKK=X,EURDKK=X`);
-            const fxData = await fxRes.json();
-            fxRates.USD = fxData.quoteResponse.result.find(r => r.symbol === "DKK=X").regularMarketPrice;
-            fxRates.EUR = fxData.quoteResponse.result.find(r => r.symbol === "EURDKK=X").regularMarketPrice;
-
-            for (let i = 0; i < investments.length; i++) {
-                const res = await fetch(`https://corsproxy.io/?https://query1.finance.yahoo.com/v7/finance/quote?symbols=${investments[i].name}`);
-                const d = await res.json();
-                if (d.quoteResponse.result[0]) investments[i].currentPrice = d.quoteResponse.result[0].regularMarketPrice;
-            }
-        } catch(e) {}
-        save(); render();
-        btn.textContent = "🔄 Opdater live data";
-    }
-
-    function deleteInvestment(index) { if(confirm("Slet aktie?")) { investments.splice(index, 1); save(); render(); } }
-
-    window.onload = () => { render(); updateDropdowns(); };
+    window.onload = () => { updateMainDropdown(); render(); };
 </script>
-
 </body>
 </html>
