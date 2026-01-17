@@ -3,51 +3,131 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Investerings-tracker Pro + Nyheder</title>
+    <title>Invest-Master Pro</title>
 
     <style>
-        body { font-family: 'Segoe UI', sans-serif; background: #f0f2f5; padding: 20px; color: #333; }
+        :root {
+            --primary: #2563eb;
+            --success: #16a34a;
+            --danger: #dc2626;
+            --bg: #f0f2f5;
+            --card-bg: #ffffff;
+            --text: #1e293b;
+            --text-light: #64748b;
+        }
+
+        body { 
+            font-family: 'Segoe UI', system-ui, sans-serif; 
+            background: var(--bg); 
+            padding: 20px; 
+            color: var(--text);
+            line-height: 1.5;
+        }
+
         .container { max-width: 1000px; margin: auto; }
-        .card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); margin-bottom: 20px; }
         
         /* Fane-system */
         .tabs { display: flex; gap: 10px; margin-bottom: 20px; }
-        .tab-btn { padding: 10px 20px; cursor: pointer; border-radius: 8px; border: none; background: #e2e8f0; font-weight: bold; }
-        .tab-btn.active { background: #2563eb; color: white; }
+        .tab-btn { 
+            padding: 12px 24px; 
+            cursor: pointer; 
+            border-radius: 8px; 
+            border: none; 
+            background: #e2e8f0; 
+            font-weight: bold;
+            transition: all 0.2s;
+        }
+        .tab-btn.active { background: var(--primary); color: white; }
+
         .tab-content { display: none; }
         .tab-content.active { display: block; }
 
-        /* Dashboard styling */
-        .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 25px; }
-        .input-group { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; margin-bottom: 10px; }
-        input, button { padding: 10px; border-radius: 6px; border: 1px solid #ddd; }
-        button { background: #2563eb; color: white; border: none; cursor: pointer; font-weight: bold; }
+        /* Cards & Layout */
+        .card { 
+            background: var(--card-bg); 
+            padding: 20px; 
+            border-radius: 12px; 
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08); 
+            margin-bottom: 20px; 
+        }
+        .cards-grid { 
+            display: grid; 
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); 
+            gap: 15px; 
+            margin-bottom: 20px; 
+        }
+
+        h1, h2 { margin-top: 0; }
+        
+        /* Input & Knapper */
+        .input-group { 
+            display: grid; 
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); 
+            gap: 10px; 
+            margin-bottom: 15px; 
+        }
+        input { 
+            padding: 10px; 
+            border-radius: 6px; 
+            border: 1px solid #ddd; 
+            font-size: 14px;
+        }
+        button { 
+            padding: 10px 20px; 
+            border-radius: 6px; 
+            border: none; 
+            cursor: pointer; 
+            font-weight: bold; 
+            background: var(--primary);
+            color: white;
+        }
+        button:hover { opacity: 0.9; }
+        .btn-update { background: var(--success); }
+        .btn-delete { background: var(--danger); padding: 5px 10px; font-size: 12px; }
+
+        /* Tabel */
         table { width: 100%; border-collapse: collapse; }
         th, td { padding: 12px; border-bottom: 1px solid #eee; text-align: right; }
         th:first-child, td:first-child { text-align: left; }
-        .positive { color: #16a34a; font-weight: bold; }
-        .negative { color: #dc2626; font-weight: bold; }
+        
+        .positive { color: var(--success); font-weight: bold; }
+        .negative { color: var(--danger); font-weight: bold; }
 
-        /* Nyheds-styling */
+        /* Nyheder */
         .news-item { border-bottom: 1px solid #eee; padding: 15px 0; }
         .news-item:last-child { border: none; }
-        .news-title { font-weight: bold; color: #1e293b; text-decoration: none; font-size: 16px; display: block; margin-bottom: 5px; }
-        .news-title:hover { color: #2563eb; }
-        .news-meta { font-size: 12px; color: #64748b; }
+        .news-title { 
+            font-weight: bold; 
+            color: var(--text); 
+            text-decoration: none; 
+            font-size: 16px; 
+            display: block; 
+            margin-bottom: 8px; 
+        }
+        .news-title:hover { color: var(--primary); }
+        .news-meta { font-size: 13px; color: var(--text-light); display: flex; align-items: center; gap: 10px; }
+        .news-date { 
+            font-size: 11px; 
+            color: var(--text-light); 
+            background: #f1f5f9; 
+            padding: 2px 8px; 
+            border-radius: 4px; 
+            font-weight: bold;
+        }
     </style>
 </head>
 
 <body>
 <div class="container">
-    <h1>🚀 Invest-Master</h1>
+    <h1>📊 Invest-Master Pro</h1>
 
     <div class="tabs">
-        <button class="tab-btn active" onclick="showTab('dashboard')">Dashboard</button>
-        <button class="tab-btn" onclick="showTab('news'); loadNews();">Nyheder</button>
+        <button class="tab-btn active" onclick="showTab('dashboard', this)">🏠 Dashboard</button>
+        <button class="tab-btn" onclick="showTab('news', this); loadNews();">📰 Nyheder</button>
     </div>
 
     <div id="dashboard" class="tab-content active">
-        <div class="cards">
+        <div class="cards-grid">
             <div class="card">Investeret<br><b id="invested">0 kr</b></div>
             <div class="card">Værdi<br><b id="value">0 kr</b></div>
             <div class="card">Afkast<br><b id="profit">0 kr</b></div>
@@ -63,13 +143,13 @@
                 <input id="currentPrice" type="number" placeholder="Nuv. pris">
                 <input id="targetPct" type="number" placeholder="Mål %">
             </div>
-            <button onclick="addInvestment()">Tilføj</button>
+            <button onclick="addInvestment()">Tilføj til portefølje</button>
         </div>
 
         <div class="card">
-            <div style="display: flex; justify-content: space-between; align-items: center;">
-                <h2>📁 Portefølje</h2>
-                <button onclick="updateAllPrices()" id="updateBtn">🔄 Opdater priser</button>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                <h2>📁 Din Allokering</h2>
+                <button class="btn-update" onclick="updateAllPrices()" id="updateBtn">🔄 Opdater live-priser</button>
             </div>
             <table>
                 <thead>
@@ -82,8 +162,8 @@
 
     <div id="news" class="tab-content">
         <div class="card">
-            <h2>📰 Seneste nyt for dine aktier</h2>
-            <div id="newsList">Vælg dashboard og tilføj aktier for at se nyheder...</div>
+            <h2>Seneste nyt for dine tickers</h2>
+            <div id="newsList">Tilføj aktier for at se nyheder...</div>
         </div>
     </div>
 </div>
@@ -92,73 +172,93 @@
     let investments = JSON.parse(localStorage.getItem("investments")) || [];
     const fmt = new Intl.NumberFormat('da-DK', { style: 'currency', currency: 'DKK', maximumFractionDigits: 0 });
 
-    function showTab(tabId) {
+    function showTab(tabId, btn) {
         document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
         document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
         document.getElementById(tabId).classList.add('active');
-        event.currentTarget.classList.add('active');
+        btn.classList.add('active');
     }
 
     function save() { localStorage.setItem("investments", JSON.stringify(investments)); }
 
     function addInvestment() {
-        const i = {
-            name: document.getElementById("name").value.toUpperCase(),
-            quantity: parseFloat(document.getElementById("quantity").value),
-            buyPrice: parseFloat(document.getElementById("buyPrice").value),
-            currentPrice: parseFloat(document.getElementById("currentPrice").value),
-            targetPct: parseFloat(document.getElementById("targetPct").value) || 0
-        };
-        if (!i.name || isNaN(i.quantity)) return;
-        investments.push(i);
+        const name = document.getElementById("name").value.toUpperCase();
+        const qty = parseFloat(document.getElementById("quantity").value);
+        const buy = parseFloat(document.getElementById("buyPrice").value);
+        const curr = parseFloat(document.getElementById("currentPrice").value);
+        const target = parseFloat(document.getElementById("targetPct").value) || 0;
+
+        if (!name || isNaN(qty)) return;
+
+        investments.push({ name, quantity: qty, buyPrice: buy, currentPrice: curr, targetPct: target });
         save(); render();
+        
+        // Ryd felter
+        ["name", "quantity", "buyPrice", "currentPrice", "targetPct"].forEach(id => document.getElementById(id).value = "");
     }
 
     function deleteInvestment(index) {
-        investments.splice(index, 1);
-        save(); render();
+        if(confirm("Vil du slette denne investering?")) {
+            investments.splice(index, 1);
+            save(); render();
+        }
     }
 
     async function updateAllPrices() {
         const btn = document.getElementById("updateBtn");
-        btn.textContent = "Henter...";
+        btn.textContent = "Henter priser...";
+        btn.disabled = true;
+
         for (let i = 0; i < investments.length; i++) {
             try {
                 const res = await fetch(`https://corsproxy.io/?https://query1.finance.yahoo.com/v7/finance/quote?symbols=${investments[i].name}`);
                 const data = await res.json();
-                if (data.quoteResponse.result[0]) investments[i].currentPrice = data.quoteResponse.result[0].regularMarketPrice;
-            } catch (e) { console.error(e); }
+                if (data.quoteResponse.result[0]) {
+                    investments[i].currentPrice = data.quoteResponse.result[0].regularMarketPrice;
+                }
+            } catch (e) { console.error("Fejl:", e); }
         }
         save(); render();
-        btn.textContent = "🔄 Opdater priser";
+        btn.textContent = "🔄 Opdater live-priser";
+        btn.disabled = false;
     }
 
     async function loadNews() {
         const newsList = document.getElementById("newsList");
-        if (investments.length === 0) { newsList.innerHTML = "Ingen aktier fundet."; return; }
+        if (investments.length === 0) { 
+            newsList.innerHTML = "Ingen aktier i porteføljen. Tilføj tickers som f.eks. 'AAPL' eller 'NOVO-B.CO'."; 
+            return; 
+        }
         
-        newsList.innerHTML = "Henter nyheder...";
+        newsList.innerHTML = "Henter de seneste nyheder...";
         const tickers = investments.map(i => i.name).join(',');
         
         try {
-            // Vi henter nyheder via Yahoo Finance API (gennem proxy)
             const res = await fetch(`https://corsproxy.io/?https://query1.finance.yahoo.com/v1/finance/search?q=${tickers}`);
             const data = await res.json();
             const news = data.news || [];
             
             if (news.length === 0) {
-                newsList.innerHTML = "Ingen friske nyheder fundet for dine tickers.";
+                newsList.innerHTML = "Ingen nyheder fundet for dine tickers.";
                 return;
             }
 
-            newsList.innerHTML = news.map(item => `
-                <div class="news-item">
-                    <a href="${item.link}" target="_blank" class="news-title">${item.title}</a>
-                    <div class="news-meta">Kilde: ${item.publisher} • Relateret: ${item.relatedTickers?.join(', ') || 'N/A'}</div>
-                </div>
-            `).join('');
+            const df = new Intl.DateTimeFormat('da-DK', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' });
+
+            newsList.innerHTML = news.map(item => {
+                const pubDate = new Date(item.providerPublishTime * 1000);
+                return `
+                    <div class="news-item">
+                        <a href="${item.link}" target="_blank" class="news-title">${item.title}</a>
+                        <div class="news-meta">
+                            <span class="news-date">📅 ${df.format(pubDate)}</span>
+                            <span>Kilde: <b>${item.publisher}</b></span>
+                        </div>
+                    </div>
+                `;
+            }).join('');
         } catch (e) {
-            newsList.innerHTML = "Kunne ikke hente nyheder lige nu.";
+            newsList.innerHTML = "Kunne ikke hente nyheder. Tjek din internetforbindelse.";
         }
     }
 
@@ -173,21 +273,28 @@
 
         document.getElementById("invested").textContent = fmt.format(totalInvested);
         document.getElementById("value").textContent = fmt.format(totalValue);
-        document.getElementById("profit").textContent = fmt.format(profit);
-        document.getElementById("profitPct").textContent = profitPct.toFixed(2) + "%";
+        
+        const pEl = document.getElementById("profit");
+        pEl.textContent = fmt.format(profit);
+        pEl.className = profit >= 0 ? "positive" : "negative";
+
+        const pctEl = document.getElementById("profitPct");
+        pctEl.textContent = profitPct.toFixed(2) + "%";
+        pctEl.className = profitPct >= 0 ? "positive" : "negative";
 
         const tableBody = document.getElementById("tableBody");
         tableBody.innerHTML = investments.map((i, idx) => {
             const val = i.quantity * i.currentPrice;
             const pct = totalValue ? (val / totalValue * 100) : 0;
-            const diff = (totalValue * (i.targetPct / 100)) - val;
+            const targetVal = totalValue * (i.targetPct / 100);
+            const diff = targetVal - val;
             return `<tr>
                 <td><b>${i.name}</b></td>
                 <td>${fmt.format(val)}</td>
                 <td>${pct.toFixed(1)}%</td>
                 <td>${i.targetPct}%</td>
                 <td class="${diff >= 0 ? 'positive' : 'negative'}">${fmt.format(diff)}</td>
-                <td><button onclick="deleteInvestment(${idx})" style="background:red; padding: 2px 8px;">X</button></td>
+                <td><button class="btn-delete" onclick="deleteInvestment(${idx})">Slet</button></td>
             </tr>`;
         }).join('');
     }
