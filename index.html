@@ -7,20 +7,16 @@
 <style>
 body {
   font-family: system-ui, sans-serif;
-  background: #f5f7fa;
-  margin: 0;
+  background: #f4f6f8;
   padding: 20px;
 }
-h1, h2 {
-  margin-top: 0;
-}
 .container {
-  max-width: 1000px;
+  max-width: 900px;
   margin: auto;
 }
 .cards {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
   gap: 12px;
   margin-bottom: 20px;
 }
@@ -28,22 +24,18 @@ h1, h2 {
   background: white;
   padding: 16px;
   border-radius: 10px;
-  box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
 }
 input, button {
-  padding: 10px;
-  margin: 5px 0;
   width: 100%;
+  padding: 8px;
+  margin: 5px 0;
 }
 button {
   background: #2563eb;
   color: white;
   border: none;
   border-radius: 6px;
-  cursor: pointer;
-}
-button:hover {
-  background: #1e4ed8;
 }
 table {
   width: 100%;
@@ -57,9 +49,6 @@ th, td {
 th:first-child, td:first-child {
   text-align: left;
 }
-.section {
-  margin-top: 30px;
-}
 .positive { color: green; }
 .negative { color: red; }
 </style>
@@ -71,4 +60,108 @@ th:first-child, td:first-child {
 <h1>📊 Investerings-dashboard</h1>
 
 <div class="cards">
-  <div class="card">Investeret<br><b id="inve
+  <div class="card">Investeret<br><b id="invested">0 kr</b></div>
+  <div class="card">Værdi<br><b id="value">0 kr</b></div>
+  <div class="card">Afkast<br><b id="profit">0 kr</b></div>
+  <div class="card">Afkast %<br><b id="profitPct">0%</b></div>
+</div>
+
+<div class="card">
+<h2>➕ Tilføj investering</h2>
+<input id="name" placeholder="Aktiv">
+<input id="quantity" type="number" placeholder="Antal">
+<input id="buyPrice" type="number" placeholder="Købspris">
+<input id="currentPrice" type="number" placeholder="Nuværende pris">
+<input id="targetPct" type="number" placeholder="Mål %">
+<button onclick="addInvestment()">Tilføj</button>
+</div>
+
+<div class="card" style="margin-top:20px">
+<h2>📁 Allokering</h2>
+<table>
+<thead>
+<tr>
+<th>Aktiv</th>
+<th>Værdi</th>
+<th>Nuv %</th>
+<th>Mål %</th>
+<th>Justér</th>
+</tr>
+</thead>
+<tbody id="table"></tbody>
+</table>
+</div>
+
+</div>
+
+<script>
+let investments = JSON.parse(localStorage.getItem("investments")) || [];
+
+function save() {
+  localStorage.setItem("investments", JSON.stringify(investments));
+}
+
+function addInvestment() {
+  const i = {
+    name: name.value,
+    quantity: +quantity.value,
+    buyPrice: +buyPrice.value,
+    currentPrice: +currentPrice.value,
+    targetPct: +targetPct.value
+  };
+  if (!i.name) return;
+  investments.push(i);
+  save();
+  render();
+}
+
+function render() {
+  let invested = 0;
+  let value = 0;
+
+  investments.forEach(i => {
+    invested += i.quantity * i.buyPrice;
+    value += i.quantity * i.currentPrice;
+  });
+
+  const profit = value - invested;
+  const profitPct = invested ? profit / invested * 100 : 0;
+
+  investedEl.textContent = invested.toFixed(0) + " kr";
+  valueEl.textContent = value.toFixed(0) + " kr";
+  profitEl.textContent = profit.toFixed(0) + " kr";
+  profitPctEl.textContent = profitPct.toFixed(2) + "%";
+
+  table.innerHTML = "";
+
+  investments.forEach(i => {
+    const currentValue = i.quantity * i.currentPrice;
+    const currentPct = value ? currentValue / value * 100 : 0;
+    const targetValue = value * (i.targetPct / 100);
+    const diff = targetValue - currentValue;
+
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>${i.name}</td>
+      <td>${currentValue.toFixed(0)} kr</td>
+      <td>${currentPct.toFixed(1)}%</td>
+      <td>${i.targetPct || 0}%</td>
+      <td class="${diff >= 0 ? 'positive' : 'negative'}">
+        ${diff.toFixed(0)} kr
+      </td>
+    `;
+    table.appendChild(tr);
+  });
+}
+
+const investedEl = document.getElementById("invested");
+const valueEl = document.getElementById("value");
+const profitEl = document.getElementById("profit");
+const profitPctEl = document.getElementById("profitPct");
+const table = document.getElementById("table");
+
+render();
+</script>
+
+</body>
+</html>
