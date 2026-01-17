@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Invest-Master Pro v4.0</title>
+    <title>Invest-Master Pro v5.0</title>
 
     <style>
         :root {
@@ -13,6 +13,7 @@
             --bg: #f0f2f5;
             --card-bg: #ffffff;
             --text: #1e293b;
+            --unread: #3b82f6;
         }
 
         body { font-family: 'Segoe UI', sans-serif; background: var(--bg); padding: 20px; color: var(--text); }
@@ -25,12 +26,9 @@
         .tab-content { display: none; }
         .tab-content.active { display: block; }
 
-        .sub-tabs { display: flex; gap: 5px; margin-bottom: 15px; }
-        .sub-btn { padding: 5px 12px; font-size: 13px; cursor: pointer; border-radius: 5px; border: 1px solid #ccc; background: white; }
-        .sub-btn.active { background: #64748b; color: white; border-color: #64748b; }
-
         .card { background: var(--card-bg); padding: 20px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); margin-bottom: 20px; }
         .cards-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px; margin-bottom: 20px; }
+        
         input, select, button { padding: 10px; border-radius: 6px; border: 1px solid #ddd; font-size: 14px; }
         button { background: var(--primary); color: white; border: none; cursor: pointer; font-weight: bold; }
         
@@ -41,26 +39,22 @@
         .positive { color: var(--success); font-weight: bold; }
         .negative { color: var(--danger); font-weight: bold; }
 
-        #updateModal {
-            display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.5); align-items: center; justify-content: center;
-        }
-        .modal-content { background: white; padding: 30px; border-radius: 15px; max-width: 500px; width: 90%; position: relative; text-align: center; }
+        /* Nyheds-styling */
+        .news-item { border-bottom: 1px solid #eee; padding: 15px 0; position: relative; }
+        .unread-dot { color: var(--unread); font-size: 24px; line-height: 0; vertical-align: middle; margin-right: 8px; }
+        .news-link { text-decoration: none; color: var(--text); font-weight: bold; font-size: 16px; }
+        .news-link:visited { color: #64748b; }
+        .news-meta { font-size: 12px; color: #64748b; margin-top: 5px; }
+
+        /* Allokerings-input */
+        .alloc-input { width: 60px; text-align: center; }
     </style>
 </head>
 
 <body>
 
-<div id="updateModal">
-    <div class="modal-content">
-        <h2>✨ Nyhed: Valuta-omregning (v4.0)</h2>
-        <p>Du kan nu vælge valuta (USD/EUR) pr. aktie. Appen omregner automatisk alt til DKK!</p>
-        <button onclick="closeModal()" style="width: 100%;">Kom i gang</button>
-    </div>
-</div>
-
 <div class="container">
-    <h1>📈 Invest-Master Pro</h1>
+    <h1>📊 Invest-Master Pro v5.0</h1>
 
     <div class="tabs">
         <button class="tab-btn active" onclick="showTab('dashboard', this)">🏠 Dashboard</button>
@@ -70,9 +64,9 @@
 
     <div id="dashboard" class="tab-content active">
         <div class="cards-grid">
-            <div class="card">Investeret (DKK)<br><b id="invested">0 kr</b></div>
-            <div class="card">Værdi (DKK)<br><b id="value">0 kr</b></div>
-            <div class="card">Afkast (DKK)<br><b id="profit">0 kr</b></div>
+            <div class="card">Investeret<br><b id="invested">0 kr</b></div>
+            <div class="card">Værdi<br><b id="value">0 kr</b></div>
+            <div class="card">Afkast<br><b id="profit">0 kr</b></div>
             <div class="card">Afkast %<br><b id="profitPct">0%</b></div>
         </div>
 
@@ -84,39 +78,23 @@
                 <input id="buyPrice" type="number" placeholder="Købspris">
                 <input id="currentPrice" type="number" placeholder="Nuv. pris">
                 <select id="currency">
-                    <option value="DKK">Valuta: DKK</option>
-                    <option value="USD">Valuta: USD</option>
-                    <option value="EUR">Valuta: EUR</option>
+                    <option value="DKK">DKK</option>
+                    <option value="USD">USD</option>
+                    <option value="EUR">EUR</option>
                 </select>
-                <select id="type">
-                    <option value="Aktie">Aktie</option>
-                    <option value="ETF">ETF</option>
-                </select>
-                <select id="country">
-                    <option value="Danmark">Danmark</option>
-                    <option value="USA">USA</option>
-                    <option value="Tyskland">Tyskland</option>
-                    <option value="Andet">Andet</option>
-                </select>
-                <select id="sector">
-                    <option value="Teknologi">Teknologi</option>
-                    <option value="Sundhed">Sundhed</option>
-                    <option value="Finans">Finans</option>
-                    <option value="Energi">Energi</option>
-                    <option value="Forbrug">Forbrug</option>
-                </select>
+                <input id="subGroup" placeholder="Under-emne (fx Crowdlending)">
             </div>
-            <button onclick="addInvestment()" style="margin-top: 15px; width: 100%;">Tilføj</button>
+            <button onclick="addInvestment()" style="margin-top: 15px; width: 100%;">Tilføj til portefølje</button>
         </div>
 
         <div class="card">
             <div style="display:flex; justify-content:space-between; margin-bottom:10px">
-                <h2>Holdings (omregnet til DKK)</h2>
-                <button onclick="updateAll()" id="updateBtn">🔄 Opdater priser & kurser</button>
+                <h2>Holdings</h2>
+                <button onclick="updateAll()" id="updateBtn">🔄 Opdater live data</button>
             </div>
-            <table>
+            <table id="mainTable">
                 <thead>
-                    <tr><th>Aktiv</th><th>Valuta</th><th>Værdi (DKK)</th><th>Afkast (DKK)</th><th>Handling</th></tr>
+                    <tr><th>Aktiv</th><th>Under-emne</th><th>Værdi (DKK)</th><th>Handling</th></tr>
                 </thead>
                 <tbody id="dashboardBody"></tbody>
             </table>
@@ -125,17 +103,24 @@
 
     <div id="allocation" class="tab-content">
         <div class="card">
-            <h2>📁 Allokerings-analyse</h2>
-            <div class="sub-tabs">
-                <button class="sub-btn active" onclick="setAllocView('type', this)">1: Aktie vs ETF</button>
-                <button class="sub-btn" onclick="setAllocView('country', this)">2: Lande</button>
-                <button class="sub-btn" onclick="setAllocView('sector', this)">3: Sektorer</button>
-            </div>
-            <table>
+            <h2>⚙️ Definer din Mål-Allokering</h2>
+            <p><small>Indtast dine kategorier og mål-procenter herunder.</small></p>
+            <table id="allocSettingsTable">
                 <thead>
-                    <tr><th id="allocHeader">Kategori</th><th>Værdi (DKK)</th><th>Nuværende %</th></tr>
+                    <tr><th>Kategori / Under-emne</th><th>Mål %</th><th>Handling</th></tr>
                 </thead>
-                <tbody id="allocationBody"></tbody>
+                <tbody id="allocSettingsBody"></tbody>
+            </table>
+            <button onclick="addAllocCategory()" style="margin-top: 10px; background: var(--success);">+ Tilføj kategori</button>
+        </div>
+
+        <div class="card">
+            <h2>📊 Status vs. Mål</h2>
+            <table id="allocStatusTable">
+                <thead>
+                    <tr><th>Kategori</th><th>Nuværende (DKK)</th><th>Nuv %</th><th>Mål %</th><th>Difference</th></tr>
+                </thead>
+                <tbody id="allocStatusBody"></tbody>
             </table>
         </div>
     </div>
@@ -149,25 +134,17 @@
 </div>
 
 <script>
-    const VERSION = "4.0";
     let investments = JSON.parse(localStorage.getItem("investments")) || [];
-    let fxRates = { USD: 7.0, EUR: 7.45, DKK: 1 }; // Standardkurser, opdateres live
-    let currentAllocView = 'type'; 
+    let allocGoals = JSON.parse(localStorage.getItem("allocGoals")) || [
+        { name: "ETF", pct: 50 },
+        { name: "Udbytte", pct: 40 },
+        { name: "Krypto", pct: 10 }
+    ];
+    let readNews = JSON.parse(localStorage.getItem("readNews")) || [];
+    let fxRates = { USD: 7.0, EUR: 7.45, DKK: 1 };
     const fmt = new Intl.NumberFormat('da-DK', { style: 'currency', currency: 'DKK', maximumFractionDigits: 0 });
 
-    window.onload = function() {
-        if (localStorage.getItem("lastSeenVersion") !== VERSION) {
-            document.getElementById("updateModal").style.display = "flex";
-        }
-        updateFX(); // Hent friske valutakurser ved start
-        render();
-    };
-
-    function closeModal() {
-        localStorage.setItem("lastSeenVersion", VERSION);
-        document.getElementById("updateModal").style.display = "none";
-    }
-
+    // NAVIGATION
     function showTab(tabId, btn) {
         document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
         document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
@@ -175,15 +152,11 @@
         btn.classList.add('active');
     }
 
-    async function updateFX() {
-        try {
-            const res = await fetch(`https://corsproxy.io/?https://query1.finance.yahoo.com/v7/finance/quote?symbols=DKK=X,EURDKK=X`);
-            const data = await res.json();
-            // Yahoo bruger DKK=X (hvor mange DKK for 1 USD)
-            fxRates.USD = data.quoteResponse.result.find(r => r.symbol === "DKK=X").regularMarketPrice;
-            fxRates.EUR = data.quoteResponse.result.find(r => r.symbol === "EURDKK=X").regularMarketPrice;
-            console.log("Valutakurser opdateret:", fxRates);
-        } catch (e) { console.error("Kunne ikke hente FX kurser", e); }
+    // INVESTERINGSLOGIK
+    function save() { 
+        localStorage.setItem("investments", JSON.stringify(investments));
+        localStorage.setItem("allocGoals", JSON.stringify(allocGoals));
+        localStorage.setItem("readNews", JSON.stringify(readNews));
     }
 
     function addInvestment() {
@@ -193,33 +166,41 @@
             buyPrice: parseFloat(document.getElementById("buyPrice").value),
             currentPrice: parseFloat(document.getElementById("currentPrice").value),
             currency: document.getElementById("currency").value,
-            type: document.getElementById("type").value,
-            country: document.getElementById("country").value,
-            sector: document.getElementById("sector").value
+            subGroup: document.getElementById("subGroup").value || "Andet"
         };
         if (!i.name || isNaN(i.quantity)) return;
         investments.push(i);
         save(); render();
     }
 
-    async function updateAll() {
-        const btn = document.getElementById("updateBtn");
-        btn.textContent = "Henter data...";
-        await updateFX();
-        for (let i = 0; i < investments.length; i++) {
-            try {
-                const res = await fetch(`https://corsproxy.io/?https://query1.finance.yahoo.com/v7/finance/quote?symbols=${investments[i].name}`);
-                const data = await res.json();
-                if (data.quoteResponse.result[0]) investments[i].currentPrice = data.quoteResponse.result[0].regularMarketPrice;
-            } catch (e) { console.error(e); }
-        }
-        save(); render();
-        btn.textContent = "🔄 Opdater priser & kurser";
+    function deleteInvestment(index) { investments.splice(index, 1); save(); render(); }
+
+    // ALLOKERINGSLOGIK
+    function addAllocCategory() {
+        allocGoals.push({ name: "Ny kategori", pct: 0 });
+        renderAllocation();
     }
 
+    function updateGoalPct(index, val) {
+        allocGoals[index].pct = parseFloat(val) || 0;
+        save();
+        renderAllocation();
+    }
+
+    function updateGoalName(index, val) {
+        allocGoals[index].name = val;
+        save();
+    }
+
+    function deleteAllocGoal(index) {
+        allocGoals.splice(index, 1);
+        save();
+        renderAllocation();
+    }
+
+    // RENDERING
     function render() {
         let totalInvestedDKK = 0, totalValueDKK = 0;
-
         investments.forEach(i => {
             const rate = fxRates[i.currency] || 1;
             totalInvestedDKK += (i.quantity * i.buyPrice) * rate;
@@ -233,51 +214,105 @@
 
         const dashBody = document.getElementById("dashboardBody");
         dashBody.innerHTML = investments.map((i, idx) => {
-            const rate = fxRates[i.currency] || 1;
-            const valDKK = (i.quantity * i.currentPrice) * rate;
-            const buyDKK = (i.quantity * i.buyPrice) * rate;
+            const valDKK = (i.quantity * i.currentPrice) * (fxRates[i.currency] || 1);
+            return `<tr><td><b>${i.name}</b></td><td>${i.subGroup}</td><td>${fmt.format(valDKK)}</td><td><button onclick="deleteInvestment(${idx})" style="background:red">X</button></td></tr>`;
+        }).join('');
+    }
+
+    function renderAllocation() {
+        // Render Indstillinger
+        const settingsBody = document.getElementById("allocSettingsBody");
+        settingsBody.innerHTML = allocGoals.map((g, idx) => `
+            <tr>
+                <td><input value="${g.name}" onchange="updateGoalName(${idx}, this.value)" style="width:150px"></td>
+                <td><input type="number" value="${g.pct}" onchange="updateGoalPct(${idx}, this.value)" class="alloc-input"> %</td>
+                <td><button onclick="deleteAllocGoal(${idx})" style="background:red">X</button></td>
+            </tr>
+        `).join('');
+
+        // Render Status
+        let totalValue = investments.reduce((sum, i) => sum + (i.quantity * i.currentPrice * (fxRates[i.currency]||1)), 0);
+        const statusBody = document.getElementById("allocStatusBody");
+        
+        statusBody.innerHTML = allocGoals.map(g => {
+            // Find alle investeringer der matcher denne kategori (fx hvis subGroup indeholder navnet)
+            const catValue = investments.filter(i => i.subGroup.toLowerCase().includes(g.name.toLowerCase()))
+                                        .reduce((sum, i) => sum + (i.quantity * i.currentPrice * (fxRates[i.currency]||1)), 0);
+            
+            const curPct = totalValue ? (catValue / totalValue * 100) : 0;
+            const diffPct = curPct - g.pct;
+
             return `<tr>
-                <td><b>${i.name}</b></td>
-                <td>${i.currency}</td>
-                <td>${fmt.format(valDKK)}</td>
-                <td class="${valDKK >= buyDKK ? 'positive' : 'negative'}">${fmt.format(valDKK - buyDKK)}</td>
-                <td><button onclick="deleteInvestment(${idx})" style="background:red">X</button></td>
+                <td><b>${g.name}</b></td>
+                <td>${fmt.format(catValue)}</td>
+                <td>${curPct.toFixed(1)}%</td>
+                <td>${g.pct}%</td>
+                <td class="${Math.abs(diffPct) < 2 ? '' : (diffPct > 0 ? 'negative' : 'positive')}">
+                    ${diffPct > 0 ? '+' : ''}${diffPct.toFixed(1)}%
+                </td>
             </tr>`;
         }).join('');
     }
 
-    function save() { localStorage.setItem("investments", JSON.stringify(investments)); }
-    function deleteInvestment(index) { investments.splice(index, 1); save(); render(); }
-    function setAllocView(view, btn) {
-        currentAllocView = view;
-        document.querySelectorAll('.sub-btn').forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-        renderAllocation();
-    }
-
-    function renderAllocation() {
-        let totalValue = investments.reduce((sum, i) => sum + (i.quantity * i.currentPrice * (fxRates[i.currency]||1)), 0);
-        const groups = {};
-        investments.forEach(i => {
-            const key = i[currentAllocView];
-            groups[key] = (groups[key] || 0) + (i.quantity * i.currentPrice * (fxRates[i.currency]||1));
-        });
-        document.getElementById("allocationBody").innerHTML = Object.keys(groups).map(key => `
-            <tr><td><b>${key}</b></td><td>${fmt.format(groups[key])}</td><td>${((groups[key]/totalValue)*100).toFixed(1)}%</td></tr>
-        `).join('');
-    }
-
+    // NYHEDER MED BLUE DOT
     async function loadNews() {
         const newsList = document.getElementById("newsList");
         if (investments.length === 0) return;
+        
         try {
             const res = await fetch(`https://corsproxy.io/?https://query1.finance.yahoo.com/v1/finance/search?q=${investments.map(i=>i.name).join(',')}`);
             const data = await res.json();
-            newsList.innerHTML = data.news.map(n => `
-                <div style="margin-bottom:10px"><a href="${n.link}" target="_blank" style="text-decoration:none; color:var(--text); font-weight:bold;">${n.title}</a></div>
-            `).join('');
-        } catch (e) { newsList.innerHTML = "Fejl ved nyheder."; }
+            const df = new Intl.DateTimeFormat('da-DK', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' });
+            
+            newsList.innerHTML = data.news.map(n => {
+                const isUnread = !readNews.includes(n.uuid);
+                const pubDate = new Date(n.providerPublishTime * 1000);
+
+                return `
+                    <div class="news-item">
+                        ${isUnread ? '<span class="unread-dot">•</span>' : ''}
+                        <a href="${n.link}" target="_blank" class="news-link" onclick="markAsRead('${n.uuid}')">
+                            ${n.title}
+                        </a>
+                        <div class="news-meta">
+                            📅 ${df.format(pubDate)} | Kilde: ${n.publisher}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        } catch (e) { newsList.innerHTML = "Kunne ikke hente nyheder."; }
     }
+
+    function markAsRead(uuid) {
+        if (!readNews.includes(uuid)) {
+            readNews.push(uuid);
+            save();
+            // Vi re-renderer ikke med det samme for ikke at forstyrre klikket, 
+            // men prikken vil være væk næste gang fanen åbnes.
+        }
+    }
+
+    // LIVE OPDATERING
+    async function updateAll() {
+        const btn = document.getElementById("updateBtn");
+        btn.textContent = "Opdaterer...";
+        // Hent Valuta
+        const fxRes = await fetch(`https://corsproxy.io/?https://query1.finance.yahoo.com/v7/finance/quote?symbols=DKK=X,EURDKK=X`);
+        const fxData = await fxRes.json();
+        fxRates.USD = fxData.quoteResponse.result.find(r => r.symbol === "DKK=X").regularMarketPrice;
+        fxRates.EUR = fxData.quoteResponse.result.find(r => r.symbol === "EURDKK=X").regularMarketPrice;
+
+        // Hent Aktier
+        for (let i = 0; i < investments.length; i++) {
+            const res = await fetch(`https://corsproxy.io/?https://query1.finance.yahoo.com/v7/finance/quote?symbols=${investments[i].name}`);
+            const d = await res.json();
+            if (d.quoteResponse.result[0]) investments[i].currentPrice = d.quoteResponse.result[0].regularMarketPrice;
+        }
+        save(); render();
+        btn.textContent = "🔄 Opdater live data";
+    }
+
+    render();
 </script>
 
 </body>
